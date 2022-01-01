@@ -353,7 +353,7 @@ protected:
      *
      * @return An integer representing the identifier of the used protocol.
      */
-    virtual int myProtocolId()
+    virtual int myProtocolId() const
     {
         return protocolId;
     }

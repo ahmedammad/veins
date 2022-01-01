@@ -131,9 +131,47 @@ const SimTime SWITCHING_INTERVAL_11P = SimTime().setRaw(50000000000UL);
  */
 const SimTime GUARD_INTERVAL_11P = SimTime().setRaw(4000000000UL);
 
-const Bandwidth BANDWIDTH_11P = Bandwidth::ofdm_10_mhz;
+/** @brief Duration of the Short Training Field
+ *
+ * as defined in Table 21-4 Timing-related parameters in the IEEE 802.11ad-2012 standard
+ */
+const double PHY_STF_PREAMBLE_DURATION_11AD = 1236e-9;
 
-/** @brief Channels as reserved by the FCC
+/** @brief Duration of the Channel Estimation Field
+ *
+ * as defined in Table 21-4 Timing-related parameters in the IEEE 802.11ad-2012 standard
+ */
+const double PHY_CE_PREAMBLE_DURATION_11AD = 655e-9;
+
+/** @brief Symbol interval
+ *
+ * as defined in Table 21-4 Timing-related parameters in the IEEE 802.11ad-2012 standard
+ */
+const double T_SYM_80211AD = 242e-9;
+
+/** @brief Header Duration of SC PHY
+ *
+ * as defined in Table 21-4 Timing-related parameters in the IEEE 802.11ad-2012 standard
+ */
+const double PHY_HDR_DURATION_SC_11AD = 582e-9;
+
+/** @brief Header Duration of OFDM PHY
+ *
+ * as defined in Table 21-4 Timing-related parameters in the IEEE 802.11ad-2012 standard
+ */
+const double PHY_HDR_DURATION_OFDM_11AD = 242e-9;
+
+/** @brief Code Word Length in bits
+ *
+ * as defined in Table 21-15 LDPC code rates in the IEEE 802.11ad-2012 standard
+ */
+const int PHY_CW_LENGTH_11AD = 672;
+
+const Bandwidth BANDWIDTH_11P = Bandwidth::ofdm_10_mhz;
+const Bandwidth BANDWIDTH_SC_11AD = Bandwidth::sc_1760_mhz;
+const Bandwidth BANDWIDTH_OFDM_11AD = Bandwidth::ofdm_1830_mhz;
+
+/** @brief Channels as reserved by the FCC and ch1-ch6 for 802.11ad 
  *
  */
 enum class Channel {
@@ -143,7 +181,13 @@ enum class Channel {
     cch = 178,
     sch3 = 180,
     sch4 = 182,
-    hpps = 184
+    hpps = 184,
+    ch1 = 1,
+    ch2 = 2,
+    ch3 = 3,
+    ch4 = 4,
+    ch5 = 5,
+    ch6 = 6
 };
 
 /**
@@ -159,6 +203,12 @@ const std::map<Channel, double> IEEE80211ChannelFrequencies = {
     {Channel::sch3, 5.90e9},
     {Channel::sch4, 5.91e9},
     {Channel::hpps, 5.92e9},
+    {Channel::ch1, 58.32e9},
+    {Channel::ch2, 60.48e9},
+    {Channel::ch3, 62.64e9},
+    {Channel::ch4, 64.80e9},
+    {Channel::ch5, 66.96e9},
+    {Channel::ch6, 69.12e9},
 };
 
 enum class ChannelType {

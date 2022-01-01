@@ -80,7 +80,8 @@ protected:
     bool allowTxDuringRx;
 
     enum ProtocolIds {
-        IEEE_80211 = 12123
+        IEEE_80211 = 12123,
+        IEEE_80211ad = 12124
     };
     /**
      * @brief Creates and returns an instance of the AnalogueModel with the
@@ -153,6 +154,11 @@ protected:
      * @brief Initializes a new Decider80211 from the passed parameter map.
      */
     virtual std::unique_ptr<Decider> initializeDecider80211p(ParameterMap& params);
+
+    /**
+     * @brief Initializes a new Decider80211ad from the passed parameter map.
+     */
+    virtual std::unique_ptr<Decider> initializeDecider80211ad(ParameterMap& params);
 
     /**
      * Create a protocol-specific AirFrame

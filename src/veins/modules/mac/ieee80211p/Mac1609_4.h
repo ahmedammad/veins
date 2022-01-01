@@ -318,6 +318,7 @@ protected:
     std::set<unsigned long> handledUnicastToApp;
 
     Mac80211pToPhy11pInterface* phy11p;
+    bool is11ad;
 };
 
 } // namespace veins

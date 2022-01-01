@@ -28,6 +28,7 @@
 #include "veins/modules/phy/PhyLayer80211p.h"
 
 #include "veins/modules/phy/Decider80211p.h"
+#include "veins/modules/phy/Decider80211ad.h"
 #include "veins/modules/analogueModel/SimplePathlossModel.h"
 #include "veins/modules/analogueModel/BreakpointPathlossModel.h"
 #include "veins/modules/analogueModel/PERModel.h"
@@ -220,6 +221,10 @@ unique_ptr<Decider> PhyLayer80211p::getDeciderFromName(std::string name, Paramet
         protocolId = IEEE_80211;
         return initializeDecider80211p(params);
     }
+    if (name == "Decider80211ad") {
+        protocolId = IEEE_80211ad;
+        return initializeDecider80211ad(params);
+    }
     return BasePhyLayer::getDeciderFromName(name, params);
 }
 
@@ -259,11 +264,26 @@ unique_ptr<Decider> PhyLayer80211p::initializeDecider80211p(ParameterMap& params
     return unique_ptr<Decider>(std::move(dec));
 }
 
+unique_ptr<Decider> PhyLayer80211p::initializeDecider80211ad(ParameterMap& params)
+{
+    double centerFreq = params["centerFrequency"];
+    auto dec = make_unique<Decider80211ad>(this, this, minPowerLevel, ccaThreshold, allowTxDuringRx, centerFreq, findHost()->getIndex(), collectCollisionStatistics);
+    dec->setPath(getParentModule()->getFullPath());
+    return unique_ptr<Decider>(std::move(dec));
+}
+
 void PhyLayer80211p::changeListeningChannel(Channel channel)
 {
+    if (myProtocolId() == 12124) {
+        Decider80211ad* decAd = dynamic_cast<Decider80211ad*>(decider.get());
+        ASSERT(decAd);
+        double freq = IEEE80211ChannelFrequencies.at(channel);
+        decAd->changeFrequency(freq);
+        return;
+    }
+
     Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
     ASSERT(dec);
-
     double freq = IEEE80211ChannelFrequencies.at(channel);
     dec->changeFrequency(freq);
 }
@@ -277,15 +297,29 @@ void PhyLayer80211p::handleSelfMessage(cMessage* msg)
         ASSERT(msg == txOverTimer);
         sendControlMsgToMac(new cMessage("Transmission over", TX_OVER));
         // check if there is another packet on the chan, and change the chan-state to idle
-        Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
-        ASSERT(dec);
-        if (dec->cca(simTime(), nullptr)) {
-            // chan is idle
-            EV_TRACE << "Channel idle after transmit!\n";
-            dec->setChannelIdleStatus(true);
+        if (myProtocolId() == 12124) {
+            Decider80211ad* decAd = dynamic_cast<Decider80211ad*>(decider.get());
+            ASSERT(decAd);
+            if (decAd->cca(simTime(), nullptr)) {
+                // chan is idle
+                EV_TRACE << "Channel idle after transmit!\n";
+                decAd->setChannelIdleStatus(true);
+            }
+            else {
+                EV_TRACE << "Channel not yet idle after transmit!\n";
+            }
         }
         else {
-            EV_TRACE << "Channel not yet idle after transmit!\n";
+            Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
+            ASSERT(dec);
+            if (dec->cca(simTime(), nullptr)) {
+                // chan is idle
+                EV_TRACE << "Channel idle after transmit!\n";
+                dec->setChannelIdleStatus(true);
+            }
+            else {
+                EV_TRACE << "Channel not yet idle after transmit!\n";
+            }
         }
         break;
     }
@@ -316,8 +350,11 @@ void PhyLayer80211p::attachSignal(AirFrame* airFrame, cObject* ctrlInfo)
 
     const auto duration = getFrameDuration(airFrame->getEncapsulatedPacket()->getBitLength(), ctrlInfo11p->mcs);
     ASSERT(duration > 0);
+    EV_INFO << "duration!" << duration << endl;
     Signal signal(overallSpectrum, simTime(), duration);
     auto freqIndex = overallSpectrum.indexOf(IEEE80211ChannelFrequencies.at(ctrlInfo11p->channelNr));
+    EV_INFO << "IEEE80211ChannelFrequencies!" <<IEEE80211ChannelFrequencies.at(ctrlInfo11p->channelNr)<< endl;
+    EV_INFO << "freqIndex!" << freqIndex << endl;
     signal.at(freqIndex - 1) = ctrlInfo11p->txPower_mW;
     signal.at(freqIndex) = ctrlInfo11p->txPower_mW;
     signal.at(freqIndex + 1) = ctrlInfo11p->txPower_mW;
@@ -344,6 +381,12 @@ simtime_t PhyLayer80211p::setRadioState(int rs)
 void PhyLayer80211p::setCCAThreshold(double ccaThreshold_dBm)
 {
     ccaThreshold = pow(10, ccaThreshold_dBm / 10);
+    if (myProtocolId() == 12124) {
+        Decider80211ad* decAd = dynamic_cast<Decider80211ad*>(decider.get());
+        ASSERT(decAd);
+        decAd->setCCAThreshold(ccaThreshold_dBm);
+        return;
+    }
     Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
     ASSERT(dec);
     dec->setCCAThreshold(ccaThreshold_dBm);
@@ -355,6 +398,12 @@ double PhyLayer80211p::getCCAThreshold()
 
 void PhyLayer80211p::notifyMacAboutRxStart(bool enable)
 {
+    if (myProtocolId() == 12124) {
+        Decider80211ad* decAd = dynamic_cast<Decider80211ad*>(decider.get());
+        ASSERT(decAd);
+        decAd->setNotifyRxStart(enable);
+        return;
+    }
     Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
     ASSERT(dec);
     dec->setNotifyRxStart(enable);
@@ -363,6 +412,16 @@ void PhyLayer80211p::notifyMacAboutRxStart(bool enable)
 void PhyLayer80211p::requestChannelStatusIfIdle()
 {
     Enter_Method_Silent();
+    if (myProtocolId() == 12124) {
+        Decider80211ad* decAd = dynamic_cast<Decider80211ad*>(decider.get());
+        ASSERT(decAd);
+        if (decAd->cca(simTime(), nullptr)) {
+            // chan is idle
+            EV_TRACE << "Request channel status: channel idle!\n";
+            decAd->setChannelIdleStatus(true);
+        }
+        return;
+    }
     Decider80211p* dec = dynamic_cast<Decider80211p*>(decider.get());
     ASSERT(dec);
     if (dec->cca(simTime(), nullptr)) {
@@ -376,6 +435,12 @@ simtime_t PhyLayer80211p::getFrameDuration(int payloadLengthBits, MCS mcs) const
 {
     Enter_Method_Silent();
     ASSERT(mcs != MCS::undefined);
+    if (myProtocolId() == 12124) {
+        auto nCW = (payloadLengthBits * 8) / (PHY_CW_LENGTH_11AD * get11adDatarate(mcs));
+        auto nSym = (nCW * PHY_CW_LENGTH_11AD) / getNCBPS(mcs);
+        // calculate frame duration according to section 21.12.3 of the IEEE 802.11ad standard
+        return PHY_STF_PREAMBLE_DURATION_11AD + PHY_CE_PREAMBLE_DURATION_11AD + PHY_HDR_DURATION_OFDM_11AD + (nSym * T_SYM_80211AD);
+    }
     auto ndbps = getNDBPS(mcs);
     // calculate frame duration according to Equation (17-29) of the IEEE 802.11-2007 standard
     return PHY_HDR_PREAMBLE_DURATION + PHY_HDR_PLCPSIGNAL_DURATION + T_SYM_80211P * ceil(static_cast<double>(16 + payloadLengthBits + 6) / (ndbps));

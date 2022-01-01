@@ -53,7 +53,7 @@ void Mac1609_4::initialize(int stage)
         ASSERT(simTime().getScaleExp() == -12);
 
         txPower = par("txPower").doubleValue();
-        int bitrate = par("bitrate");
+        long long int bitrate = par("bitrate");
         setParametersForBitrate(bitrate);
 
         // unicast parameters
@@ -243,6 +243,7 @@ void Mac1609_4::handleSelfMsg(cMessage* msg)
             if (useSCH) EV_TRACE << " Time in this slot left: " << timeLeftInSlot() << std::endl;
 
             Channel channelNr = (activeChannel == ChannelType::control) ? Channel::cch : mySCH;
+            if (is11ad) channelNr = Channel::ch2;
             double freq = IEEE80211ChannelFrequencies.at(channelNr);
 
             EV_TRACE << "Sending a Packet. Frequency " << freq << " Priority" << lastAC << std::endl;
@@ -986,9 +987,14 @@ void Mac1609_4::channelIdle(bool afterSwitch)
 
 void Mac1609_4::setParametersForBitrate(uint64_t bitrate)
 {
-    mcs = getMCS(bitrate, BANDWIDTH_11P);
+    mcs = (is11ad = bitrate > 27000000) ? getMCS(bitrate, BANDWIDTH_OFDM_11AD) : getMCS(bitrate, BANDWIDTH_11P);
     if (mcs == MCS::undefined) {
-        throw cRuntimeError("Chosen Bitrate is not valid for 802.11p: Valid rates are: 3Mbps, 4.5Mbps, 6Mbps, 9Mbps, 12Mbps, 18Mbps, 24Mbps and 27Mbps. Please adjust your omnetpp.ini file accordingly.");
+        if (is11ad) {
+            throw cRuntimeError("Chosen Bitrate is not valid for 802.11ad: Valid rates are: 693Mbps, 866.25Mbps, 1386Mbps, 1732.5Mbps, 2079Mbps, 2772Mbps, 3465Mbps, 4158Mbps, 4504.5Mbps, 5197.5Mbps, 6237Mbps and 6756.75Mbps. Please adjust your omnetpp.ini file accordingly.");
+        }
+        else {
+            throw cRuntimeError("Chosen Bitrate is not valid for 802.11p: Valid rates are: 3Mbps, 4.5Mbps, 6Mbps, 9Mbps, 12Mbps, 18Mbps, 24Mbps and 27Mbps. Please adjust your omnetpp.ini file accordingly.");
+        }
     }
 }
 
@@ -1031,7 +1037,8 @@ void Mac1609_4::sendAck(LAddress::L2Type recpAddress, unsigned long wsmId)
     double freq = IEEE80211ChannelFrequencies.at(Channel::cch);
 
     EV_TRACE << "Sending an ack. Frequency " << freq << " at time : " << simTime() + SIFS_11P << std::endl;
-    sendFrame(mac, SIFS_11P, Channel::cch, mcs, txPower);
+    Channel channelNr = is11ad ? Channel::ch2 : Channel::cch;
+    sendFrame(mac, SIFS_11P, channelNr, mcs, txPower);
     scheduleAt(simTime() + SIFS_11P, stopIgnoreChannelStateMsg);
 }
 
