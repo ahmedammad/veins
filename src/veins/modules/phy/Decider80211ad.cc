@@ -32,7 +32,7 @@
 #include "veins/modules/messages/Mac80211Pkt_m.h"
 #include "veins/base/toolbox/Signal.h"
 #include "veins/modules/messages/AirFrame11p_m.h"
-#include "veins/modules/phy/NistErrorRate.h"
+#include "veins/modules/phy/ErrorRate80211ad.h"
 #include "veins/modules/utility/ConstsPhy.h"
 
 #include "veins/base/toolbox/SignalUtils.h"
@@ -112,13 +112,13 @@ DeciderResult* Decider80211ad::checkIfSignalOk(AirFrame* frame)
     simtime_t start = s.getReceptionStart();
     simtime_t end = s.getReceptionEnd();
 
-    start = start + PHY_HDR_PREAMBLE_DURATION; // its ok if something in the training phase is broken
+    start = start + PHY_HDR_DURATION_OFDM_11AD; // its ok if something in the training phase is broken
 
     AirFrameVector airFrames;
     getChannelInfo(start, end, airFrames);
 
     double noise = phy->getNoiseFloorValue();
-
+    EV_INFO << "noisefloorvalue" << noise << endl;
     // Make sure to use the adjusted starting-point (which ignores the preamble)
     double sinrMin = SignalUtils::getMinSINR(start, end, frame, airFrames, noise);
     double snrMin;
@@ -173,19 +173,20 @@ enum Decider80211ad::PACKET_OK_RESULT Decider80211ad::packetOk(double sinrMin, d
 {
     double packetOkSinr;
     double packetOkSnr;
-
+    sinrMin = FWMath::mW2dBm(sinrMin);
     // compute success rate depending on mcs and bw
-    packetOkSinr = NistErrorRate::getChunkSuccessRate(bitrate, BANDWIDTH_11P, sinrMin, PHY_HDR_SERVICE_LENGTH + lengthMPDU + PHY_TAIL_LENGTH);
+    packetOkSinr = ErrorRate80211ad::getChunkSuccessRate(bitrate, BANDWIDTH_OFDM_11AD, sinrMin, PHY_HDR_LENGTH_11AD + lengthMPDU);
 
     // check if header is broken
-    double headerNoError = NistErrorRate::getChunkSuccessRate(PHY_HDR_BITRATE, BANDWIDTH_11P, sinrMin, PHY_HDR_PLCPSIGNAL_LENGTH);
-
+    double headerNoError = ErrorRate80211ad::getChunkSuccessRate(PHY_HDR_BITRATE, BANDWIDTH_OFDM_11AD, sinrMin, PHY_HDR_LENGTH_11AD);
+    EV_INFO << "sinr, snr, bitrate, packetoksnir, cllectStats " << sinrMin << ", " << snrMin << ", " << bitrate << ", " << packetOkSinr << ", " << collectCollisionStats << endl;
+    EV_INFO << "sinrMin" << sinrMin << endl;
     double headerNoErrorSnr;
     // compute PER also for SNR only
     if (collectCollisionStats) {
 
-        packetOkSnr = NistErrorRate::getChunkSuccessRate(bitrate, BANDWIDTH_11P, snrMin, PHY_HDR_SERVICE_LENGTH + lengthMPDU + PHY_TAIL_LENGTH);
-        headerNoErrorSnr = NistErrorRate::getChunkSuccessRate(PHY_HDR_BITRATE, BANDWIDTH_11P, snrMin, PHY_HDR_PLCPSIGNAL_LENGTH);
+        packetOkSnr = ErrorRate80211ad::getChunkSuccessRate(bitrate, BANDWIDTH_OFDM_11AD, snrMin, PHY_HDR_LENGTH_11AD + lengthMPDU);
+        headerNoErrorSnr = ErrorRate80211ad::getChunkSuccessRate(PHY_HDR_BITRATE, BANDWIDTH_OFDM_11AD, snrMin, PHY_HDR_LENGTH_11AD);
 
         // the probability of correct reception without considering the interference
         // MUST be greater or equal than when consider it

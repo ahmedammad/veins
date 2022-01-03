@@ -167,6 +167,12 @@ const double PHY_HDR_DURATION_OFDM_11AD = 242e-9;
  */
 const int PHY_CW_LENGTH_11AD = 672;
 
+/** @brief Length (in bits) of OFDM PHY HEADER
+ *
+ * as defined in table 21.13 of IEEE 802.11ad standard
+ */
+const int PHY_HDR_LENGTH_11AD = 64;
+
 const Bandwidth BANDWIDTH_11P = Bandwidth::ofdm_10_mhz;
 const Bandwidth BANDWIDTH_SC_11AD = Bandwidth::sc_1760_mhz;
 const Bandwidth BANDWIDTH_OFDM_11AD = Bandwidth::ofdm_1830_mhz;
