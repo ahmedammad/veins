@@ -44,28 +44,28 @@ private:
      * \param snr snr value
      * \return BER of SQPSK at the given SNR
      */
-    static double getSqpskBer(double snr, uint32_t rate);
+    static signed int getSqpskBer(double snr, uint32_t rate);
     /**
      * Return BER of QPSK at the given SNR.
      *
      * \param snr snr value
      * \return BER of QPSK at the given SNR
      */
-    static double getQpskBer(double snr, uint32_t rate);
+    static signed int getQpskBer(double snr, uint32_t rate);
     /**
      * Return BER of QAM16 at the given SNR.
      *
      * \param snr snr value
      * \return BER of QAM16 at the given SNR
      */
-    static double get16QamBer(double snr, uint32_t rate);
+    static signed int get16QamBer(double snr, uint32_t rate);
     /**
      * Return BER of QAM64 at the given SNR.
      *
      * \param snr snr value
      * \return BER of QAM64 at the given SNR
      */
-    static double get64QamBer(double snr, uint32_t rate);
+    static signed int get64QamBer(double snr, uint32_t rate);
     /**
      * Return Success Probability of SQPSK at the given SNR after applying BER sampling.
      *
@@ -102,6 +102,14 @@ private:
      * \return Success Probabilty of QAM64 at the given SNR after applying BER sampling.
      */
     static double getQam64SuccessProb(double snr, uint32_t nbits, uint32_t rate);
+    /**
+     * Return Success Rate at the given BER and nbits.
+     *
+     * \param ber ber value
+     * \param nbits the number of bits in the chunk
+     * \return Success Rate at the given BER and nbits.
+     */
+    static double getSuccessRate(signed int ber, uint32_t nbits);
 };
 
 } // namespace veins

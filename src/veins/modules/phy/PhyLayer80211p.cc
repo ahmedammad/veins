@@ -57,10 +57,12 @@ void PhyLayer80211p::initialize(int stage)
 
         // Create frequency mappings and initialize spectrum for signal representation
         Spectrum::Frequencies freqs;
+        std::string decider = par("decider").xmlValue()->getElementsByTagName("Decider").front()->getAttribute("type");
+        double bandwidth = (decider == "Decider80211ad") ? 2.16e9 : 5e6;
         for (auto& channel : IEEE80211ChannelFrequencies) {
-            freqs.push_back(channel.second - 5e6);
+            freqs.push_back(channel.second - bandwidth);
             freqs.push_back(channel.second);
-            freqs.push_back(channel.second + 5e6);
+            freqs.push_back(channel.second + bandwidth);
         }
         overallSpectrum = Spectrum(freqs);
     }

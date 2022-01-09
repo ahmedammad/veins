@@ -29,85 +29,153 @@ using veins::ErrorRate80211ad;
 ErrorRate80211ad::ErrorRate80211ad()
 {
 }
-double ErrorRate80211ad::getSqpskBer(double snr, uint32_t rate)
-{
-    double z = std::sqrt(snr / 2.0);
-    double ber = 0.5 * erfc(z);
-    return ber;
-}
-double ErrorRate80211ad::getQpskBer(double snr, uint32_t rate)
+signed int ErrorRate80211ad::getSqpskBer(double snr, uint32_t rate)
 {
     if (rate == 1) {
-        if (snr == 7) { return -2; }
+        if (snr > 1 && snr <= 2) { return -1; }
+        if (snr > 2 && snr <= 6) { return -2; }
+        if (snr > 6 && snr <= 7) { return -5; }
+    }
+    if (rate == 5) {
+        if (snr > 1 && snr <= 2) { return -1; }
+        if (snr > 2 && snr <= 6) { return -2; }
+        if (snr > 6 && snr <= 7) { return -7; }
+    }
+    return 0.0;
+}
+signed int ErrorRate80211ad::getQpskBer(double snr, uint32_t rate)
+{
+    if (rate == 1) {
+        if (snr >= 4 && snr <= 6.5) { return -1; }
+        if (snr > 6.5 && snr <= 7) { return -2; }
         if (snr > 7 && snr <= 7.2) { return -3; }
         if (snr > 7.2 && snr <= 7.4) { return -4; }
         if (snr > 7.4 && snr <= 7.7) { return -5; }
         if (snr > 7.7 && snr <= 8) { return -6; }
     }
     if (rate == 3) {
-        if (snr == 9) { return -2; }
-        if (snr > 9 && snr <= 9.3) { return -3; }
-        if (snr > 9.3 && snr <= 10) { return -4; }
-        if (snr > 10 && snr <= 10.5) { return -5; }
+        if (snr >= 6 && snr <= 8.2) { return -1; }
+        if (snr > 8.2 && snr <= 9.2) { return -2; }
+        if (snr > 9.2 && snr <= 9.7) { return -3; }
+        if (snr > 9.7 && snr <= 10.2) { return -4; }
+        if (snr > 10.2 && snr <= 10.5) { return -5; }
         if (snr > 10.5 && snr <= 11) { return -6; }
     }
     if (rate == 5) {
-        if (snr == 8) { return -2; }
-        if (snr > 8 && snr <= 9) { return -3; }
+        if (snr >= 4 && snr <= 7.5) { return -1; }
+        if (snr > 7.5 && snr <= 8.3) { return -2; }
+        if (snr > 8.3 && snr <= 9) { return -3; }
         if (snr > 9 && snr <= 9.3) { return -4; }
         if (snr > 9.3 && snr <= 9.8) { return -5; }
         if (snr > 9.8 && snr <= 10) { return -6; }
     }
     return 0.0;
 }
-double ErrorRate80211ad::get16QamBer(double snr, uint32_t rate)
+signed int ErrorRate80211ad::get16QamBer(double snr, uint32_t rate)
 {
-    double z = std::sqrt(snr / (5.0 * 2.0));
-    double ber = 0.75 * 0.5 * erfc(z);
-    return ber;
+    if (rate == 1) {
+        if (snr == 10) { return -1; }
+        if (snr > 10 && snr <= 12) { return -2; }
+        if (snr > 12 && snr <= 12.5) { return -3; }
+        if (snr > 12.5 && snr <= 13.1) { return -4; }
+        if (snr > 13.1 && snr <= 13.7) { return -5; }
+        if (snr > 13.7 && snr <= 14) { return -6; }
+    }
+    if (rate == 3) {
+        if (snr >= 11 && snr <=12) { return -1; }
+        if (snr > 12 && snr <= 13) { return -2; }
+        if (snr > 13 && snr <= 14) { return -3; }
+        if (snr > 14 && snr <= 14.4) { return -4; }
+        if (snr > 14.4 && snr <= 14.7) { return -5; }
+        if (snr > 14.7 && snr <= 15) { return -6; }
+    }
+    if (rate == 5) {
+        if (snr >= 13 && snr<=14) { return -1; }
+        if (snr > 14 && snr <= 15) { return -2; }
+        if (snr > 15 && snr <= 16) { return -3; }
+        if (snr > 16 && snr <= 17.2) { return -4; }
+        if (snr > 17.2 && snr <= 17.4) { return -5; }
+        if (snr > 17.4 && snr <= 18) { return -6; }
+    }
+    if (rate == 13) {
+        if (snr >= 10 && snr<=14) { return -1; }
+        if (snr > 14 && snr <= 16) { return -2; }
+        if (snr > 16 && snr <= 17) { return -3; }
+        if (snr > 17 && snr <= 18) { return -4; }
+        if (snr > 18 && snr <= 18.6) { return -5; }
+        if (snr > 18.6 && snr <= 19) { return -6; }
+    }
+    return 0.0;
 }
-double ErrorRate80211ad::get64QamBer(double snr, uint32_t rate)
+signed int ErrorRate80211ad::get64QamBer(double snr, uint32_t rate)
 {
-    double z = std::sqrt(snr / (21.0 * 2.0));
-    double ber = 7.0 / 12.0 * 0.5 * erfc(z);
-    return ber;
+    if (rate == 3) {
+        if (snr >= 17 && snr<=20) { return -1; }
+        if (snr > 20 && snr <= 21.5) { return -2; }
+        if (snr > 21.5 && snr <= 23) { return -3; }
+        if (snr > 23 && snr <= 25) { return -4; }
+        if (snr > 25 && snr <= 25.5) { return -5; }
+        if (snr > 25.5 && snr <= 26) { return -6; }
+    }
+    if (rate == 5) {
+        if (snr >= 16 && snr <=18) { return -1; }
+        if (snr > 18 && snr <= 20) { return -2; }
+        if (snr > 20 && snr <= 20.4) { return -3; }
+        if (snr > 20.4 && snr <= 20.8) { return -4; }
+        if (snr > 20.8 && snr <= 21.5) { return -5; }
+        if (snr > 21.5 && snr <= 22) { return -6; }
+    }
+    if (rate == 13) {
+        if (snr >= 18 && snr <=20) { return -1; }
+        if (snr > 20 && snr <= 23) { return -2; }
+        if (snr > 23 && snr <= 24) { return -3; }
+        if (snr > 24 && snr <= 26) { return -4; }
+        if (snr > 26 && snr <= 27.3) { return -5; }
+        if (snr > 27.3 && snr <= 28) { return -6; }
+    }
+    return 0.0;
 }
 
 double ErrorRate80211ad::getSqpskSuccessProb(double snr, uint32_t nbits, uint32_t rate)
 {
     double ber = getSqpskBer(snr, rate);
     if (ber == 0.0) {
-        return 1.0;
+        ber = 1.0;
     }
-
-    return 0;
+    return getSuccessRate(ber, nbits);
 }
 double ErrorRate80211ad::getQpskSuccessProb(double snr, uint32_t nbits, uint32_t rate)
 {
     double ber = getQpskBer(snr, rate);
     if (ber == 0.0) {
-        return 1.0;
+        ber = 1.0;
     }
-
-    return 0;
+    return getSuccessRate(ber, nbits);
 }
 double ErrorRate80211ad::getQam16SuccessProb(double snr, uint32_t nbits, uint32_t rate)
-{
+{   EV_INFO << "nbitss, snr " << nbits << " ," << snr << endl;
     double ber = get16QamBer(snr, rate);
     if (ber == 0.0) {
-        return 1.0;
+        ber = 1.0;
     }
-
-    return 0;
+    return getSuccessRate(ber, nbits);
 }
 double ErrorRate80211ad::getQam64SuccessProb(double snr, uint32_t nbits, uint32_t rate)
 {
     double ber = get64QamBer(snr, rate);
     if (ber == 0.0) {
-        return 1.0;
+        ber = 1.0;
     }
+    return getSuccessRate(ber, nbits);
+}
+double ErrorRate80211ad::getSuccessRate(signed int ber, uint32_t nbits)
+{
+    double succProb = 1 - std::pow(10, ber);
+    EV_INFO << "ber, succProb "<<  ber << " , " << succProb << endl;
+    succProb = std::pow(succProb , nbits);
+    EV_INFO << "succProb " << succProb << endl;
 
-    return 0;
+    return succProb;
 }
 double ErrorRate80211ad::getChunkSuccessRate(unsigned int datarate, enum Bandwidth bw, double snr_mW, uint32_t nbits)
 {
