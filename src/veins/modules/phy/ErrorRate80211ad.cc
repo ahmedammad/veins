@@ -153,7 +153,7 @@ double ErrorRate80211ad::getQpskSuccessProb(double snr, uint32_t nbits, uint32_t
     return getSuccessRate(ber, nbits);
 }
 double ErrorRate80211ad::getQam16SuccessProb(double snr, uint32_t nbits, uint32_t rate)
-{   EV_INFO << "nbitss, snr " << nbits << " ," << snr << endl;
+{
     double ber = get16QamBer(snr, rate);
     if (ber == 0.0) {
         ber = 1.0;
@@ -162,6 +162,7 @@ double ErrorRate80211ad::getQam16SuccessProb(double snr, uint32_t nbits, uint32_
 }
 double ErrorRate80211ad::getQam64SuccessProb(double snr, uint32_t nbits, uint32_t rate)
 {
+    EV_INFO << "in qam64 nbitss, snr " << nbits << " ," << snr << endl;
     double ber = get64QamBer(snr, rate);
     if (ber == 0.0) {
         ber = 1.0;
@@ -173,15 +174,13 @@ double ErrorRate80211ad::getSuccessRate(signed int ber, uint32_t nbits)
     double succProb = 1 - std::pow(10, ber);
     EV_INFO << "ber, succProb "<<  ber << " , " << succProb << endl;
     succProb = std::pow(succProb , nbits);
-    EV_INFO << "succProb " << succProb << endl;
 
     return succProb;
 }
-double ErrorRate80211ad::getChunkSuccessRate(unsigned int datarate, enum Bandwidth bw, double snr_mW, uint32_t nbits)
+double ErrorRate80211ad::getChunkSuccessRate(uint64_t datarate, enum Bandwidth bw, double snr_mW, uint32_t nbits)
 {
     // get mcs from datarate and bw
     MCS mcs = getMCS(datarate, bw);
-
     // compute success probabilty depending on mcs
     switch (mcs) {
     case MCS::ofdm_sqpsk_r_1_2:

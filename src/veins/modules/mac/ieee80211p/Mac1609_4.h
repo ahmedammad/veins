@@ -139,6 +139,7 @@ public:
 
         /** @brief Id for debug messages */
         std::string myId;
+        bool is11ad;
     };
 
 public:

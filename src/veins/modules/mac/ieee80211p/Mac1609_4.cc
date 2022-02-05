@@ -79,6 +79,7 @@ void Mac1609_4::initialize(int stage)
         myEDCA[ChannelType::control]->createQueue(3, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
         myEDCA[ChannelType::control]->createQueue(6, CWMIN_11P, CWMAX_11P, AC_BE);
         myEDCA[ChannelType::control]->createQueue(9, CWMIN_11P, CWMAX_11P, AC_BK);
+        myEDCA[ChannelType::control]->is11ad = is11ad;
 
         myEDCA[ChannelType::service] = make_unique<EDCA>(this, ChannelType::service, par("queueSize"));
         myEDCA[ChannelType::service]->myId = myId;
@@ -87,6 +88,7 @@ void Mac1609_4::initialize(int stage)
         myEDCA[ChannelType::service]->createQueue(3, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
         myEDCA[ChannelType::service]->createQueue(6, CWMIN_11P, CWMAX_11P, AC_BE);
         myEDCA[ChannelType::service]->createQueue(9, CWMIN_11P, CWMAX_11P, AC_BK);
+        myEDCA[ChannelType::control]->is11ad = is11ad;
 
         useSCH = par("useServiceChannel").boolValue();
         if (useSCH) {
@@ -254,7 +256,9 @@ void Mac1609_4::handleSelfMsg(cMessage* msg)
                 waitUntilAckRXorTimeout = true;
                 // PHY-RXSTART.indication should be received within ackWaitTime
                 // sifs + slot + rx_delay: see 802.11-2012 9.3.2.8 (32us + 13us + 49us = 94us)
-                simtime_t ackWaitTime(94, SIMTIME_US);
+                // for 11ad: see IEEE 802.11ad-2012 Table 21-31 (3us + 5us + 3.3us = 11.3us)
+                int time = is11ad ? 11.3 : 94;
+                simtime_t ackWaitTime(time, SIMTIME_US);
                 // update id in the retransmit timer
                 myEDCA[activeChannel]->myQueues[lastAC].ackTimeOut->setWsmId(pktToSend->getTreeId());
                 simtime_t timeOut = sendingDuration + ackWaitTime;
@@ -688,7 +692,11 @@ BaseFrame1609_4* Mac1609_4::EDCA::initiateTransmit(simtime_t lastIdle)
     // The phrase "EDCAF of higher UP" of IEEE Std 802.11-2012 Section 9.19.2.3 is assumed to be meaningless.
     for (auto iter = myQueues.rbegin(); iter != myQueues.rend(); iter++) {
         if (iter->second.queue.size() != 0 && !iter->second.waitForAck) {
-            if (idleTime >= iter->second.aifsn * SLOTLENGTH_11P + SIFS_11P && iter->second.txOP == true) {
+
+            simtime_t slotLength = is11ad ? SLOTLENGTH_11AD : SLOTLENGTH_11P;
+            simtime_t sifs = is11ad ? SIFS_11AD : SIFS_11P;
+
+            if (idleTime >= iter->second.aifsn * slotLength + sifs && iter->second.txOP == true) {
 
                 EV_TRACE << "Queue " << iter->first << " is ready to send!" << std::endl;
 
@@ -744,18 +752,21 @@ simtime_t Mac1609_4::EDCA::startContent(simtime_t idleSince, bool guardActive)
                 statsNumBackoff++;
             }
 
-            simtime_t DIFS = edcaQueue.aifsn * SLOTLENGTH_11P + SIFS_11P;
+            simtime_t slotLength = is11ad ? SLOTLENGTH_11AD : SLOTLENGTH_11P;
+            simtime_t sifs = is11ad ? SIFS_11AD : SIFS_11P;
+
+            simtime_t DIFS = edcaQueue.aifsn * slotLength + sifs;
 
             // the next possible time to send can be in the past if the channel was idle for a long time, meaning we COULD have sent earlier if we had a packet
-            simtime_t possibleNextEvent = DIFS + edcaQueue.currentBackoff * SLOTLENGTH_11P;
+            simtime_t possibleNextEvent = DIFS + edcaQueue.currentBackoff * slotLength;
 
-            EV_TRACE << "Waiting Time for Queue " << accessCategory << ":" << possibleNextEvent << "=" << edcaQueue.aifsn << " * " << SLOTLENGTH_11P << " + " << SIFS_11P << "+" << edcaQueue.currentBackoff << "*" << SLOTLENGTH_11P << "; Idle time: " << idleTime << std::endl;
+            EV_TRACE << "Waiting Time for Queue " << accessCategory << ":" << possibleNextEvent << "=" << edcaQueue.aifsn << " * " << slotLength << " + " << sifs << "+" << edcaQueue.currentBackoff << "*" << slotLength << "; Idle time: " << idleTime << std::endl;
 
             if (idleTime > possibleNextEvent) {
                 EV_TRACE << "Could have already send if we had it earlier" << std::endl;
                 // we could have already sent. round up to next boundary
                 simtime_t base = idleSince + DIFS;
-                possibleNextEvent = simTime() - simtime_t().setRaw((simTime() - base).raw() % SLOTLENGTH_11P.raw()) + SLOTLENGTH_11P;
+                possibleNextEvent = simTime() - simtime_t().setRaw((simTime() - base).raw() % slotLength.raw()) + slotLength;
             }
             else {
                 // we are gonna send in the future
@@ -789,7 +800,9 @@ void Mac1609_4::EDCA::stopContent(bool allowBackoff, bool generateTxOp)
             int64_t oldBackoff = edcaQueue.currentBackoff;
 
             std::string info;
-            if (passedTime < edcaQueue.aifsn * SLOTLENGTH_11P + SIFS_11P) {
+            simtime_t slotLength = is11ad ? SLOTLENGTH_11AD : SLOTLENGTH_11P;
+            simtime_t sifs = is11ad ? SIFS_11AD : SIFS_11P;
+            if (passedTime < edcaQueue.aifsn * slotLength + sifs) {
                 // we didnt even make it one DIFS :(
                 info.append(" No DIFS");
             }
@@ -798,7 +811,7 @@ void Mac1609_4::EDCA::stopContent(bool allowBackoff, bool generateTxOp)
                 edcaQueue.currentBackoff -= 1;
 
                 // check how many slots we waited after the first DIFS
-                int64_t passedSlots = (int64_t)((passedTime - SimTime(edcaQueue.aifsn * SLOTLENGTH_11P + SIFS_11P)) / SLOTLENGTH_11P);
+                int64_t passedSlots = (int64_t)((passedTime - SimTime(edcaQueue.aifsn * slotLength + sifs)) / slotLength);
 
                 EV_TRACE << "Passed slots after DIFS: " << passedSlots << std::endl;
 
@@ -1035,11 +1048,12 @@ void Mac1609_4::sendAck(LAddress::L2Type recpAddress, unsigned long wsmId)
     // TODO: check ack procedure when channel switching is allowed
     // double freq = (activeChannel == ChannelType::control) ? IEEE80211ChannelFrequencies.at(Channel::cch) : IEEE80211ChannelFrequencies.at(mySCH);
     double freq = IEEE80211ChannelFrequencies.at(Channel::cch);
+    simtime_t sifs = is11ad ? SIFS_11AD : SIFS_11P;
 
-    EV_TRACE << "Sending an ack. Frequency " << freq << " at time : " << simTime() + SIFS_11P << std::endl;
+    EV_TRACE << "Sending an ack. Frequency " << freq << " at time : " << simTime() + sifs << std::endl;
     Channel channelNr = is11ad ? Channel::ch2 : Channel::cch;
-    sendFrame(mac, SIFS_11P, channelNr, mcs, txPower);
-    scheduleAt(simTime() + SIFS_11P, stopIgnoreChannelStateMsg);
+    sendFrame(mac, sifs, channelNr, mcs, txPower);
+    scheduleAt(simTime() + sifs, stopIgnoreChannelStateMsg);
 }
 
 void Mac1609_4::handleUnicast(LAddress::L2Type srcAddr, unique_ptr<BaseFrame1609_4> wsm)

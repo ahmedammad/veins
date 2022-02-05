@@ -173,6 +173,18 @@ const int PHY_CW_LENGTH_11AD = 672;
  */
 const int PHY_HDR_LENGTH_11AD = 64;
 
+/** @brief Slot Time
+ *
+ * as defined in Table 21-31 DMG PHY characteristics in the IEEE 802.11ad-2012 standard
+ */
+const SimTime SLOTLENGTH_11AD = SimTime().setRaw(5000000UL);
+
+/** @brief Short interframe space
+ *
+ * as defined in Table 21-31 DMG PHY characteristics in the IEEE 802.11ad-2012 standard
+ */
+const SimTime SIFS_11AD = SimTime().setRaw(3000000UL);
+
 const Bandwidth BANDWIDTH_11P = Bandwidth::ofdm_10_mhz;
 const Bandwidth BANDWIDTH_SC_11AD = Bandwidth::sc_1760_mhz;
 const Bandwidth BANDWIDTH_OFDM_11AD = Bandwidth::ofdm_1830_mhz;

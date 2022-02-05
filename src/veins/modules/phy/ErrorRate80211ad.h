@@ -35,7 +35,7 @@ class VEINS_API ErrorRate80211ad {
 public:
     ErrorRate80211ad();
 
-    static double getChunkSuccessRate(unsigned int datarate, enum Bandwidth bw, double snr_mW, uint32_t nbits);
+    static double getChunkSuccessRate(uint64_t datarate, enum Bandwidth bw, double snr_mW, uint32_t nbits);
 
 private:
     /**
