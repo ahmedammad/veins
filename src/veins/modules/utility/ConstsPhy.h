@@ -265,16 +265,16 @@ inline uint32_t getNCBPS(MCS mcs)
 inline double getCodeRate(MCS mcs)
 {
     if (mcs == MCS::ofdm_sqpsk_r_1_2 || mcs == MCS::ofdm_qpsk_r_1_2 || mcs == MCS::ofdm_qam16_r_1_2) {
-        return (1/2);
+        return 0.5;
     }
     if (mcs == MCS::ofdm_qpsk_r_3_4 || mcs == MCS::ofdm_qam16_r_3_4 || mcs == MCS::ofdm_qam64_r_3_4) {
-        return (3/4);
+        return 0.75;
     }
     if (mcs == MCS::ofdm_sqpsk_r_5_8 || mcs == MCS::ofdm_qpsk_r_5_8 || mcs == MCS::ofdm_qam16_r_5_8 || mcs == MCS::ofdm_qam64_r_5_8) {
-        return (5/8);
+        return 0.625;
     }
     if (mcs == MCS::ofdm_qam16_r_13_16 || mcs == MCS::ofdm_qam64_r_13_16) {
-        return (13/16);
+        return 0.8125;
     }
 }
 
