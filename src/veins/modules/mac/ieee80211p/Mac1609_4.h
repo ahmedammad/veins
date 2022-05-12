@@ -183,6 +183,8 @@ public:
      */
     void setCCAThreshold(double ccaThreshold_dBm);
 
+    std::pair<simtime_t, simtime_t> getBusyIdleTime() override;
+
 protected:
     /** @brief States of the channel selecting operation.*/
 
@@ -289,7 +291,10 @@ protected:
     long statsNumInternalContention;
     long statsNumBackoff;
     long statsSlotsBackoff;
+    long inMacnxtevent;
+    long inMachandleself;
     simtime_t statsTotalBusyTime;
+    simtime_t statsTotalIdleTime;
 
     /** @brief The power (in mW) to transmit with.*/
     double txPower;
@@ -320,6 +325,10 @@ protected:
 
     Mac80211pToPhy11pInterface* phy11p;
     bool is11ad;
+
+    uint32_t numPackLoss;
+    cOutVector lostPackets;
+    simtime_t lastUpdate;
 };
 
 } // namespace veins

@@ -118,6 +118,7 @@ protected:
     bool collectCollisionStats;
     /** @brief count the number of collisions */
     unsigned int collisions;
+    unsigned int totalPackets;
 
     /** @brief notify PHY-RXSTART.indication  */
     bool notifyRxStart;
@@ -163,6 +164,7 @@ public:
         , myStartTime(simTime().dbl())
         , collectCollisionStats(collectCollisionStatistics)
         , collisions(0)
+        , totalPackets(0)
         , notifyRxStart(false)
     {
         phy11p = dynamic_cast<Decider80211pToPhy80211pInterface*>(phy);

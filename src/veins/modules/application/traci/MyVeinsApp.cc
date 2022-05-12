@@ -21,6 +21,7 @@
 //
 
 #include "veins/modules/application/traci/MyVeinsApp.h"
+//#include "veins/modules/application/traci/TraCIDemo11pMessage_m.h"
 
 using namespace veins;
 
@@ -28,26 +29,65 @@ Define_Module(veins::MyVeinsApp);
 
 void MyVeinsApp::initialize(int stage)
 {
-    DemoBaseApplLayer::initialize(stage);
+    DemoBaseApplLayer11ad::initialize(stage);
+
     if (stage == 0) {
+        traciVehicle->setSpeedMode(0x1f);
+            traciVehicle->setSpeed(0);
         // Initializing members and pointers of your application goes here
         EV << "Initializing " << par("appName").stringValue() << std::endl;
+//        numPack = 0;
+//        packets.setName("receivedPackets");
+//        this->lastUpdate = 0;
     }
-    else if (stage == 1) {
-        // Initializing members that require initialized other modules goes here
-    }
+//    else if (stage == 1) {
+//        // Initializing members that require initialized other modules goes here
+//    }
+//    std::cerr << "slot" << SimTime().setRaw(5000000UL).dbl() << std::endl;
+//    std::cerr << "sifs " << SimTime().setRaw(3000000UL).dbl() << std::endl;
+//    exit (-1);
 }
 
 void MyVeinsApp::finish()
 {
-    DemoBaseApplLayer::finish();
+    DemoBaseApplLayer11ad::finish();
     // statistics recording goes here
+//    recordScalar("#numPack", numPack);
+//    recordScalar("#numSent", numSent);
 }
 
 void MyVeinsApp::onBSM(DemoSafetyMessage* bsm)
 {
+//    numPack++;
+
+//    packets.record(wsm->getBitLength());
+//    simtime_t interval = simTime() - this->lastUpdate;
+//    if(interval >= 1) {
+//        packets.record(numPack);
+//        this->lastUpdate = simTime();
+//        numPack = 0;
+//        EV_INFO << "interval is " << interval << endl;
+//    }
+/*    TraCIDemo11pMessage* wsm = new TraCIDemo11pMessage();
+    populateWSM(wsm);
+    wsm->setDemoData(mobility->getRoadId().c_str());
+    wsm->addBitLength(100000);
+    sendDown(wsm);
+*/
+//    packets.record(nextPos.x);
     // Your application has received a beacon message from another car or RSU
     // code for handling the message goes here
+//    bool hasStopped = false;
+//    if(hasStopped == false) {
+//        traciVehicle->setSpeedMode(0x1f);
+//        traciVehicle->setSpeed(0);
+//        hasStopped = true;
+//    }
+//    else {
+//        traciVehicle->setSpeedMode(0x1f);
+//        traciVehicle->setSpeed(20);
+//        hasStopped = false;
+//    }
 }
 
 void MyVeinsApp::onWSM(BaseFrame1609_4* wsm)
@@ -64,14 +104,14 @@ void MyVeinsApp::onWSA(DemoServiceAdvertisment* wsa)
 
 void MyVeinsApp::handleSelfMsg(cMessage* msg)
 {
-    DemoBaseApplLayer::handleSelfMsg(msg);
+    DemoBaseApplLayer11ad::handleSelfMsg(msg);
     // this method is for self messages (mostly timers)
     // it is important to call the DemoBaseApplLayer function for BSM and WSM transmission
 }
 
-void MyVeinsApp::handlePositionUpdate(cObject* obj)
-{
-    DemoBaseApplLayer::handlePositionUpdate(obj);
-    // the vehicle has moved. Code that reacts to new positions goes here.
-    // member variables such as currentPosition and currentSpeed are updated in the parent class
-}
+//void MyVeinsApp::handlePositionUpdate(cObject* obj)
+//{
+//    DemoBaseApplLayer11ad::handlePositionUpdate(obj);
+//    // the vehicle has moved. Code that reacts to new positions goes here.
+//    // member variables such as currentPosition and currentSpeed are updated in the parent class
+//}

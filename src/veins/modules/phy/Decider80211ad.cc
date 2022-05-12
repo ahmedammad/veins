@@ -142,6 +142,7 @@ DeciderResult* Decider80211ad::checkIfSignalOk(AirFrame* frame)
 
     case DECODED:
         EV_TRACE << "Packet is fine! We can decode it" << std::endl;
+        
         result = new DeciderResult80211(true, payloadBitrate, sinrMin, recvPower_dBm, false);
         break;
 
@@ -170,7 +171,7 @@ DeciderResult* Decider80211ad::checkIfSignalOk(AirFrame* frame)
 }
 
 enum Decider80211ad::PACKET_OK_RESULT Decider80211ad::packetOk(double sinrMin, double snrMin, int lengthMPDU, double bitrate)
-{
+{   totalPackets++;
     double packetOkSinr;
     double packetOkSnr;
     sinrMin = FWMath::mW2dBm(sinrMin);
@@ -178,8 +179,9 @@ enum Decider80211ad::PACKET_OK_RESULT Decider80211ad::packetOk(double sinrMin, d
     packetOkSinr = ErrorRate80211ad::getChunkSuccessRate(bitrate, BANDWIDTH_OFDM_11AD, sinrMin, PHY_HDR_LENGTH_11AD + lengthMPDU);
 
     // check if header is broken
-    double headerNoError = ErrorRate80211ad::getChunkSuccessRate(PHY_HDR_BITRATE, BANDWIDTH_OFDM_11AD, sinrMin, PHY_HDR_LENGTH_11AD);
+    double headerNoError = ErrorRate80211ad::getChunkSuccessRate(bitrate, BANDWIDTH_OFDM_11AD, sinrMin, PHY_HDR_LENGTH_11AD);
     EV_INFO << "sinr, snr, bitrate, packetoksnir, cllectStats " << sinrMin << ", " << snrMin << ", " << bitrate << ", " << packetOkSinr << ", " << collectCollisionStats << endl;
+    EV_INFO << "lengthMPDU " << lengthMPDU << endl;
     EV_INFO << "sinrMin" << sinrMin << endl;
     double headerNoErrorSnr;
     // compute PER also for SNR only
@@ -417,6 +419,7 @@ void Decider80211ad::finish()
 {
     simtime_t totalTime = simTime() - myStartTime;
     phy->recordScalar("busyTime", myBusyTime / totalTime.dbl());
+    phy->recordScalar("totalPackets", totalPackets);
     if (collectCollisionStats) {
         phy->recordScalar("ncollisions", collisions);
     }

@@ -36,7 +36,9 @@
 #include "veins/base/phyLayer/MacToPhyInterface.h"
 #include "veins/base/phyLayer/Antenna.h"
 #include "veins/base/phyLayer/ChannelInfo.h"
-
+#include "veins/modules/messages/BaseFrame1609_4_m.h"
+#include "veins/modules/messages/DemoSafetyMessage_m.h"
+#include "veins/modules/messages/Mac80211Pkt_m.h"
 namespace veins {
 
 class Decider;

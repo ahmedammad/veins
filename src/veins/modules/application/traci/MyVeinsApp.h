@@ -24,7 +24,7 @@
 
 #include "veins/veins.h"
 
-#include "veins/modules/application/ieee80211p/DemoBaseApplLayer.h"
+#include "veins/modules/application/ieee80211p/DemoBaseApplLayer11ad.h"
 
 using namespace omnetpp;
 
@@ -40,7 +40,7 @@ namespace veins {
  *
  */
 
-class VEINS_API MyVeinsApp : public DemoBaseApplLayer {
+class VEINS_API MyVeinsApp : public DemoBaseApplLayer11ad {
 public:
     void initialize(int stage) override;
     void finish() override;
@@ -51,7 +51,10 @@ protected:
     void onWSA(DemoServiceAdvertisment* wsa) override;
 
     void handleSelfMsg(cMessage* msg) override;
-    void handlePositionUpdate(cObject* obj) override;
+//    void handlePositionUpdate(cObject* obj) override;
+//    long numPack;
+//    cOutVector packets;
+//    simtime_t lastUpdate;
 };
 
 } // namespace veins

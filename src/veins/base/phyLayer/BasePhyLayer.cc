@@ -405,6 +405,12 @@ void BasePhyLayer::handleMessage(cMessage* msg)
 
 void BasePhyLayer::handleAirFrame(AirFrame* frame)
 {
+    //  BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(frame);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    // }
+    // std::cerr << msg->getId() <<" bsm phy " << simTime() << std::endl;
+
     // TODO: ask jerome to set air frame priority in his UWBIRPhy
     // ASSERT(frame->getSchedulingPriority() == airFramePriority());
 
@@ -509,9 +515,22 @@ void BasePhyLayer::handleAirFrameEndReceive(AirFrame* frame)
 }
 
 void BasePhyLayer::handleUpperMessage(cMessage* msg)
-{
-
+{  
+    // BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(msg);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    // }
+    // std::cerr << msg->getId() <<" bsm phy " << simTime() << std::endl;
+   
+    //  if (msg != nullptr){
+    //       Mac80211Pkt* tmp = dynamic_cast<Mac80211Pkt*>(msg);
+    //     cMessage* packet = tmp->decapsulate();
+    //      DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(packet);
+    //     std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    //  }
+    // std::cerr << packet->getId() <<" bsm phy " << simTime() << std::endl;
     // check if Radio is in TX state
+    
     if (radio->getCurrentState() != Radio::TX) {
         delete msg;
         msg = nullptr;
@@ -591,7 +610,11 @@ void BasePhyLayer::handleUpperControlMessage(cMessage* msg)
 
 void BasePhyLayer::handleSelfMessage(cMessage* msg)
 {
-
+    // BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(msg);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    // }
+    // std::cerr << msg->getId() <<" bsm phy " << simTime() << std::endl;
     switch (msg->getKind()) {
     // transmission over
     case TX_OVER:
@@ -629,7 +652,12 @@ void BasePhyLayer::sendMacPktUp(cMessage* pkt)
 
 void BasePhyLayer::sendMessageDown(AirFrame* msg)
 {
-
+    // BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(msg);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    // }
+    // cMessage* packet = msg->decapsulate();
+    // std::cerr << packet->getId() <<" bsm phy " << simTime() << std::endl;
     sendToChannel(msg);
 }
 

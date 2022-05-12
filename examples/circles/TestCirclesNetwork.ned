@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2016 David Eckhoff <david.eckhoff@fau.de>
+// Copyright (C) 2017 Christoph Sommer <sommer@ccs-labs.org>
 //
 // Documentation for these modules is at http://veins.car2x.org/
 //
@@ -18,28 +18,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-//
+// TestCirclesNetwork RSUExampleScenario
 
-#include "veins/modules/application/traci/TraCIDemoRSU11p.h"
+import org.car2x.veins.nodes.RSU;
+import org.car2x.veins.nodes.Scenario;
 
-#include "veins/modules/application/traci/TraCIDemo11pMessage_m.h"
-
-using namespace veins;
-
-Define_Module(veins::TraCIDemoRSU11p);
-
-void TraCIDemoRSU11p::onWSA(DemoServiceAdvertisment* wsa)
+network TestCirclesNetwork extends Scenario
 {
-    // if this RSU receives a WSA for service 42, it will tune to the chan
-    if (wsa->getPsid() == 42) {
-        mac->changeServiceChannel(static_cast<Channel>(wsa->getTargetChannel()));
-    }
-}
-
-void TraCIDemoRSU11p::onWSM(BaseFrame1609_4* frame)
-{
-    TraCIDemo11pMessage* wsm = check_and_cast<TraCIDemo11pMessage*>(frame);
-
-    // this rsu repeats the received traffic update in 2 seconds plus some random delay
-    // sendDelayedDown(wsm->dup(), 2 + uniform(0.01, 0.2));
+    submodules:
+        rsu[1]: RSU {
+            @display("p=150,140;i=veins/sign/yellowdiamond;is=vs");
+        }
 }

@@ -231,6 +231,8 @@ void DemoBaseApplLayer::handleSelfMsg(cMessage* msg)
     case SEND_BEACON_EVT: {
         DemoSafetyMessage* bsm = new DemoSafetyMessage();
         populateWSM(bsm);
+        // bsm->setPsid(123);
+        // std::cerr << bsm->getPsid() << " bsm app " << simTime() << std::endl;
         sendDown(bsm);
         scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
         break;

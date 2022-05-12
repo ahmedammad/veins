@@ -292,7 +292,13 @@ void PhyLayer80211p::changeListeningChannel(Channel channel)
 
 void PhyLayer80211p::handleSelfMessage(cMessage* msg)
 {
-
+    // BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(msg);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm phy " << simTime() << std::endl;
+    // }
+    // std::cerr << msg->getId() <<" bsm phy " << simTime() << std::endl;
+       // cMessage* packet = msg->decapsulate();
+    // std::cerr << packet->getId() <<" bsm phy " << simTime() << std::endl;
     switch (msg->getKind()) {
     // transmission overBasePhyLayer::
     case TX_OVER: {
@@ -351,6 +357,7 @@ void PhyLayer80211p::attachSignal(AirFrame* airFrame, cObject* ctrlInfo)
     const auto ctrlInfo11p = check_and_cast<MacToPhyControlInfo11p*>(ctrlInfo);
 
     const auto duration = getFrameDuration(airFrame->getEncapsulatedPacket()->getBitLength(), ctrlInfo11p->mcs);
+    EV_INFO << "frame duration getBitLength()!" << airFrame->getEncapsulatedPacket()->getBitLength() << endl;
     ASSERT(duration > 0);
     EV_INFO << "duration!" << duration << endl;
     Signal signal(overallSpectrum, simTime(), duration);
@@ -438,8 +445,10 @@ simtime_t PhyLayer80211p::getFrameDuration(int payloadLengthBits, MCS mcs) const
     Enter_Method_Silent();
     ASSERT(mcs != MCS::undefined);
     if (myProtocolId() == 12124) {
-        auto nCW = (payloadLengthBits * 8) / (PHY_CW_LENGTH_11AD * get11adDatarate(mcs));
-        auto nSym = (nCW * PHY_CW_LENGTH_11AD) / getNCBPS(mcs);
+        EV_INFO << " coderate" << getCodeRate(mcs) << endl;
+        double nCW = (payloadLengthBits) / (PHY_CW_LENGTH_11AD * getCodeRate(mcs));
+        double nSym = (nCW * PHY_CW_LENGTH_11AD) / getNCBPS(mcs);
+        EV_INFO << "payloadLengthBits" << payloadLengthBits << "nCW " << nCW << " nSym " << nSym << " ncbps " << getNCBPS(mcs) << endl;
         // calculate frame duration according to section 21.12.3 of the IEEE 802.11ad standard
         return PHY_STF_PREAMBLE_DURATION_11AD + PHY_CE_PREAMBLE_DURATION_11AD + PHY_HDR_DURATION_OFDM_11AD + (nSym * T_SYM_80211AD);
     }

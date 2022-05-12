@@ -20,39 +20,22 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
-#pragma once
+package org.car2x.veins.modules.application.ieee80211p;
+//@namespace(veins);
+simple Splitter11ad
+{
+    parameters:
+        @class(veins::Splitter11ad);
+    gates:
+        output upperLayerOut;             // output gate towards the application
+        input upperLayerIn;               // input gate from the application
 
-#include "veins/base/utils/NetwToMacControlInfo.h"
-#include "veins/modules/utility/Consts80211p.h"
+        output lowerLayerOut_nicA;        // output gate towards the 802.11p NIC
+        input lowerLayerIn_nicA;          // input gate from the 802.11p NIC
 
-namespace veins {
+        output lowerLayerOut_nicB;        // output gate towards the 802.11p NIC
+        input lowerLayerIn_nicB;          // input gate from the 802.11p NIC
 
-/**
- * @brief
- * Interface between DemoBaseApplLayer Layer and Mac1609_4
- *
- * @author David Eckhoff
- *
- * @ingroup macLayer
- */
-class VEINS_API DemoBaseApplLayerToMac1609_4Interface {
-public:
-    virtual bool isChannelSwitchingActive() = 0;
-
-    virtual simtime_t getSwitchingInterval() = 0;
-
-    virtual bool isCurrentChannelCCH() = 0;
-
-    virtual void changeServiceChannel(Channel channelNumber) = 0;
-
-    virtual ~DemoBaseApplLayerToMac1609_4Interface(){};
-
-    /**
-     * @brief Returns the MAC address of this MAC module.
-     */
-    virtual const LAddress::L2Type& getMACAddress() = 0;
-
-    virtual std::pair<simtime_t, simtime_t> getBusyIdleTime() = 0;
-};
-
-} // namespace veins
+        output lowerLayerOut_nicC;        // output gate towards the 802.11p NIC
+        input lowerLayerIn_nicC;          // input gate from the 802.11p NIC
+}

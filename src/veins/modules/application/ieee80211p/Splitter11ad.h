@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011 David Eckhoff <eckhoff@cs.fau.de>
+// Copyright (C) 2016 David Eckhoff <eckhoff@cs.fau.de>
 //
 // Documentation for these modules is at http://veins.car2x.org/
 //
@@ -22,37 +22,39 @@
 
 #pragma once
 
-#include "veins/base/utils/NetwToMacControlInfo.h"
-#include "veins/modules/utility/Consts80211p.h"
+#include <map>
+
+#include "veins/base/modules/BaseApplLayer.h"
+#include "veins/modules/messages/DemoSafetyMessage_m.h"
 
 namespace veins {
 
-/**
- * @brief
- * Interface between DemoBaseApplLayer Layer and Mac1609_4
- *
- * @author David Eckhoff
- *
- * @ingroup macLayer
- */
-class VEINS_API DemoBaseApplLayerToMac1609_4Interface {
+class Splitter11ad : public cSimpleModule {
+
 public:
-    virtual bool isChannelSwitchingActive() = 0;
+    ~Splitter11ad();
+    void initialize();
+    void finish();
 
-    virtual simtime_t getSwitchingInterval() = 0;
+protected:
+    void handleMessage(cMessage*);
 
-    virtual bool isCurrentChannelCCH() = 0;
+    /** @brief handle messages from upper  */
+    void handleUpperMessage(cMessage* msg);
 
-    virtual void changeServiceChannel(Channel channelNumber) = 0;
+    /** @brief handle messages from below */
+    void handleLowerMessage(cMessage* msg);
 
-    virtual ~DemoBaseApplLayerToMac1609_4Interface(){};
-
-    /**
-     * @brief Returns the MAC address of this MAC module.
-     */
-    virtual const LAddress::L2Type& getMACAddress() = 0;
-
-    virtual std::pair<simtime_t, simtime_t> getBusyIdleTime() = 0;
+protected:
+     // Gates
+     int upperLayerOut;
+     int upperLayerIn;
+     int lowerLayerOut_nicA;
+     int lowerLayerIn_nicA;
+     int lowerLayerOut_nicB;
+     int lowerLayerIn_nicB;
+     int lowerLayerOut_nicC;
+     int lowerLayerIn_nicC;
 };
 
 } // namespace veins

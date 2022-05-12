@@ -37,7 +37,7 @@ void SimplePathlossModel::filterSignal(Signal* signal)
 
     /** Calculate the distance factor */
     double sqrDistance = useTorus ? receiverPos.sqrTorusDist(senderPos, playgroundSize) : receiverPos.sqrdist(senderPos);
-
+    EV_INFO << "distance is " << senderPos.distance(receiverPos) << endl;
     EV_TRACE << "sqrdistance is: " << sqrDistance << endl;
 
     if (sqrDistance <= 1.0) {

@@ -31,16 +31,28 @@ module RSU
         string applType; //type of the application layer
         string nicType = default("Nic80211p"); // type of network interface card
     gates:
-        input veinsradioIn; // gate for sendDirect
+        input veinsradioInA; // gate for sendDirect
+        input veinsradioInB;
+        input veinsradioInC;
     submodules:
         appl: <applType> like org.car2x.veins.base.modules.IBaseApplLayer {
             parameters:
                 @display("p=60,50");
         }
 
-        nic: <nicType> like org.car2x.veins.modules.nic.INic80211p {
-            parameters:
-                @display("p=60,166");
+        nicA: <nicType> like org.car2x.veins.modules.nic.INic80211p {
+             parameters:
+                 @display("p=60,166");
+        }
+
+        nicB: <nicType> like org.car2x.veins.modules.nic.INic80211p {
+             parameters:
+                 @display("p=150,250");
+        }
+
+        nicC: <nicType> like org.car2x.veins.modules.nic.INic80211p {
+             parameters:
+                 @display("p=250,250");
         }
 
         mobility: BaseMobility {
@@ -48,11 +60,30 @@ module RSU
                 @display("p=130,172;i=block/cogwheel");
         }
         
-    connections:
-        nic.upperLayerOut --> appl.lowerLayerIn;
-        nic.upperLayerIn <-- appl.lowerLayerOut;
-        nic.upperControlOut --> appl.lowerControlIn;
-        nic.upperControlIn <-- appl.lowerControlOut;
+        splitter: org.car2x.veins.modules.application.ieee80211p.Splitter11ad {
+             @display("p=150,100");
+        }
+        
+    connections allowunconnected:
+//        nic.upperLayerOut --> appl.lowerLayerIn++;
+//        nic.upperLayerIn <-- appl.lowerLayerOut++;
+//        nic.upperControlOut --> appl.lowerControlIn++;
+//        nic.upperControlIn <-- appl.lowerControlOut++;
+        
+         appl.lowerLayerOut --> splitter.upperLayerIn;
+         appl.lowerLayerIn <-- splitter.upperLayerOut;
 
-        veinsradioIn --> nic.radioIn;
+         splitter.lowerLayerOut_nicA --> nicA.upperLayerIn;
+         splitter.lowerLayerIn_nicA <-- nicA.upperLayerOut;
+
+         splitter.lowerLayerOut_nicB --> nicB.upperLayerIn;
+         splitter.lowerLayerIn_nicB <-- nicB.upperLayerOut;
+
+         splitter.lowerLayerOut_nicC --> nicC.upperLayerIn;
+         splitter.lowerLayerIn_nicC <-- nicC.upperLayerOut;
+
+         veinsradioInA --> nicA.radioIn;
+         veinsradioInB --> nicB.radioIn;
+         veinsradioInC --> nicC.radioIn;
+
 }

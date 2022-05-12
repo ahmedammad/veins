@@ -75,7 +75,7 @@ void Mac1609_4::initialize(int stage)
         myEDCA[ChannelType::control] = make_unique<EDCA>(this, ChannelType::control, par("queueSize"));
         myEDCA[ChannelType::control]->myId = myId;
         myEDCA[ChannelType::control]->myId.append(" CCH");
-        myEDCA[ChannelType::control]->createQueue(2, (((CWMIN_11P + 1) / 4) - 1), (((CWMIN_11P + 1) / 2) - 1), AC_VO);
+        myEDCA[ChannelType::control]->createQueue(0, (((CWMIN_11P + 1) / 4) - 1), (((CWMIN_11P + 1) / 2) - 1), AC_VO);
         myEDCA[ChannelType::control]->createQueue(3, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
         myEDCA[ChannelType::control]->createQueue(6, CWMIN_11P, CWMAX_11P, AC_BE);
         myEDCA[ChannelType::control]->createQueue(9, CWMIN_11P, CWMAX_11P, AC_BK);
@@ -155,15 +155,22 @@ void Mac1609_4::initialize(int stage)
         statsNumBackoff = 0;
         statsSlotsBackoff = 0;
         statsTotalBusyTime = 0;
-
+        statsTotalIdleTime = 0;
+        inMacnxtevent = 0;
+        inMachandleself = 0;
         idleChannel = true;
         lastBusy = simTime();
         channelIdle(true);
+
+        numPackLoss = 0;
+        lostPackets.setName("lostPacketsps");
+        this->lastUpdate = 0;
     }
 }
 
 void Mac1609_4::handleSelfMsg(cMessage* msg)
-{
+{   inMachandleself++;
+
     if (msg == stopIgnoreChannelStateMsg) {
         ignoreChannelState = false;
         return;
@@ -198,7 +205,7 @@ void Mac1609_4::handleSelfMsg(cMessage* msg)
         // schedule next channel switch in 50ms
     }
     else if (msg == nextMacEvent) {
-
+        
         // we actually came to the point where we can send a packet
         channelBusySelf(true);
         BaseFrame1609_4* pktToSend = myEDCA[activeChannel]->initiateTransmit(lastIdle);
@@ -247,7 +254,7 @@ void Mac1609_4::handleSelfMsg(cMessage* msg)
             Channel channelNr = (activeChannel == ChannelType::control) ? Channel::cch : mySCH;
             if (is11ad) channelNr = Channel::ch2;
             double freq = IEEE80211ChannelFrequencies.at(channelNr);
-
+            // std::cerr  << " freq " << freq << std::endl;
             EV_TRACE << "Sending a Packet. Frequency " << freq << " Priority" << lastAC << std::endl;
             sendFrame(mac, RADIODELAY_11P, channelNr, usedMcs, txPower_mW);
 
@@ -283,8 +290,11 @@ void Mac1609_4::handleUpperControl(cMessage* msg)
 }
 
 void Mac1609_4::handleUpperMsg(cMessage* msg)
-{
-
+{   BaseFrame1609_4* tmp = dynamic_cast<BaseFrame1609_4*>(msg);
+    // if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(tmp)) {
+    //      std::cerr << bsm->getPsid() <<" bsm mac " << simTime() << std::endl;
+    // }
+    // std::cerr << tmp->getPsid() <<" bsm mac " << simTime() << std::endl;
     BaseFrame1609_4* thisMsg = check_and_cast<BaseFrame1609_4*>(msg);
 
     t_access_category ac = mapUserPriority(thisMsg->getUserPriority());
@@ -292,8 +302,8 @@ void Mac1609_4::handleUpperMsg(cMessage* msg)
     EV_TRACE << "Received a message from upper layer for channel " << thisMsg->getChannelNumber() << " Access Category (Priority):  " << ac << std::endl;
 
     ChannelType chan;
-
-    if (static_cast<Channel>(thisMsg->getChannelNumber()) == Channel::cch) {
+    auto ch = static_cast<Channel>(thisMsg->getChannelNumber());
+    if (ch == Channel::cch || ch == Channel::ch2) {
         chan = ChannelType::control;
     }
     else {
@@ -323,7 +333,6 @@ void Mac1609_4::handleUpperMsg(cMessage* msg)
     if (num == 1 && idleChannel == true && chan == activeChannel) {
 
         simtime_t nextEvent = myEDCA[chan]->startContent(lastIdle, guardActive());
-
         if (nextEvent != -1) {
             if ((!useSCH) || (nextEvent <= nextChannelSwitch->getArrivalTime())) {
                 if (nextMacEvent->isScheduled()) {
@@ -398,6 +407,13 @@ void Mac1609_4::handleLowerControl(cMessage* msg)
     else if (msg->getKind() == Decider80211p::BITERROR || msg->getKind() == Decider80211p::COLLISION) {
         statsSNIRLostPackets++;
         EV_TRACE << "A packet was not received due to biterrors" << std::endl;
+        numPackLoss++;
+        simtime_t interval = simTime() - this->lastUpdate;
+        if(interval >= 1) {
+            lostPackets.record(numPackLoss);
+            this->lastUpdate = simTime();
+            numPackLoss = 0;
+        }
     }
     else if (msg->getKind() == Decider80211p::RECWHILESEND) {
         statsTXRXLostPackets++;
@@ -450,6 +466,9 @@ void Mac1609_4::finish()
     recordScalar("SlotsBackoff", statsSlotsBackoff);
     recordScalar("NumInternalContention", statsNumInternalContention);
     recordScalar("totalBusyTime", statsTotalBusyTime.dbl());
+    recordScalar("inMacnxtevent", inMacnxtevent);
+    recordScalar("inMachandleself", inMachandleself);
+    recordScalar("totalIdleTime", statsTotalIdleTime.dbl());
 }
 
 Mac1609_4::~Mac1609_4()
@@ -480,6 +499,7 @@ void Mac1609_4::sendFrame(Mac80211Pkt* frame, simtime_t delay, Channel channelNr
     check_and_cast<MacToPhyControlInfo11p*>(frame->getControlInfo());
 
     lastMac.reset(frame->dup());
+    // std::cerr << delay <<" sendframe mac " << simTime() << std::endl;
     sendDelayed(frame, delay, lowerLayerOut);
 
     if (dynamic_cast<Mac80211Ack*>(frame)) {
@@ -910,7 +930,7 @@ void Mac1609_4::channelBusySelf(bool generateTxOp)
     if (!idleChannel) return;
     idleChannel = false;
     EV_TRACE << "Channel turned busy: Switch or Self-Send" << std::endl;
-
+    statsTotalIdleTime += simTime() - lastIdle;
     lastBusy = simTime();
 
     // channel turned busy
@@ -923,6 +943,11 @@ void Mac1609_4::channelBusySelf(bool generateTxOp)
     myEDCA[activeChannel]->stopContent(false, generateTxOp);
 
     emit(sigChannelBusy, true);
+}
+
+std::pair<simtime_t, simtime_t> Mac1609_4::getBusyIdleTime()
+{
+    return std::make_pair(statsTotalBusyTime, statsTotalIdleTime);
 }
 
 void Mac1609_4::channelBusy()
@@ -1047,11 +1072,12 @@ void Mac1609_4::sendAck(LAddress::L2Type recpAddress, unsigned long wsmId)
 
     // TODO: check ack procedure when channel switching is allowed
     // double freq = (activeChannel == ChannelType::control) ? IEEE80211ChannelFrequencies.at(Channel::cch) : IEEE80211ChannelFrequencies.at(mySCH);
-    double freq = IEEE80211ChannelFrequencies.at(Channel::cch);
+    Channel channelNr = is11ad ? Channel::ch2 : Channel::cch;
+    double freq = IEEE80211ChannelFrequencies.at(channelNr);
     simtime_t sifs = is11ad ? SIFS_11AD : SIFS_11P;
 
     EV_TRACE << "Sending an ack. Frequency " << freq << " at time : " << simTime() + sifs << std::endl;
-    Channel channelNr = is11ad ? Channel::ch2 : Channel::cch;
+
     sendFrame(mac, sifs, channelNr, mcs, txPower);
     scheduleAt(simTime() + sifs, stopIgnoreChannelStateMsg);
 }
