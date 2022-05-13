@@ -33,4 +33,5 @@ packet BaseFrame1609_4 {
     int psid = 0;
     //Recipient of frame (-1 for any)
     LAddress::L2Type recipientAddress = -1;
+    string accessTechnology = "";
 }
