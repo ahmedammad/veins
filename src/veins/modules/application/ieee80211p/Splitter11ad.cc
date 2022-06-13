@@ -68,21 +68,22 @@ void Splitter11ad::handleUpperMessage(cMessage* msg)
 
     if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(msg)) {
           
-        networkType = bsm->getAccessTechnology();
+        networkType = bsm->getSendSector();
         // std::cerr << networkType <<" networkType "<< std::endl;
-        if (networkType == "NIC_A") {
+        if (networkType == "nicA") {
             // hetMsg->setChannelNumber(static_cast<int>(Channel::sch1));
             send(bsm, lowerLayerOut_nicA);
         }
-        else if (networkType == "NIC_B"){
+        else if (networkType == "nicB"){
             // hetMsg->setChannelNumber(static_cast<int>(Channel::cch));
             send(bsm, lowerLayerOut_nicB);
         }
-        else if (networkType == "NIC_C"){
+        else if (networkType == "nicC"){
             // hetMsg->setChannelNumber(static_cast<int>(Channel::sch4));
             send(bsm, lowerLayerOut_nicC);
         }
         else {
+            delete(bsm);
             // error("Unknown heterogeneous message received from upper layer!");
         }
     }

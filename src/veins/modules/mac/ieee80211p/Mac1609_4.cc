@@ -583,6 +583,9 @@ void Mac1609_4::handleBroadcast(Mac80211Pkt* macPkt, DeciderResult80211* res)
     auto ctrlInfo = new PhyToMacControlInfo(res);
     ctrlInfo->setSourceAddress(macPkt->getSrcAddr());
     wsm->setControlInfo(ctrlInfo);
+//     std::cerr << " class name " << wsm->getFullPath() << std::endl;
+//     std::cerr << " getParentModule in mac " << getParentModule()->getName() << std::endl;
+    wsm->setReceiveSector(getParentModule()->getName());
     sendUp(wsm.release());
 }
 
@@ -626,6 +629,7 @@ void Mac1609_4::handleLowerMsg(cMessage* msg)
     }
     else if (dest == LAddress::L2BROADCAST()) {
         if (frameReceived) {
+            // std::cerr << " setting tech "<< std::endl;
             handleBroadcast(macPkt, res);
         }
         else {

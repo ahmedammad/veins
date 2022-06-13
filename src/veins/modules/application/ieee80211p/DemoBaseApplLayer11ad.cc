@@ -21,6 +21,8 @@
 //
 
 #include "veins/modules/application/ieee80211p/DemoBaseApplLayer11ad.h"
+#include "veins/modules/phy/DeciderResult80211.h"
+#include "veins/base/phyLayer/PhyToMacControlInfo.h"
 
 using namespace veins;
 
@@ -56,7 +58,7 @@ void DemoBaseApplLayer11ad::initialize(int stage)
         beaconLengthBits = par("beaconLengthBits");
         beaconUserPriority = par("beaconUserPriority");
         beaconInterval = par("beaconInterval");
-
+        sectorSweepInterval = par("sectorSweepInterval");
         dataLengthBits = par("dataLengthBits");
         dataUserPriority = par("dataUserPriority");
 
@@ -71,6 +73,8 @@ void DemoBaseApplLayer11ad::initialize(int stage)
         sendBeaconEvt = new cMessage("beacon evt", SEND_BEACON_EVT);
         sendWSAEvt = new cMessage("wsa evt", SEND_WSA_EVT);
         calcStatsEvt = new cMessage("stats evt", Calc_Stats_EVT);
+        sectorSweepEvt = new cMessage("sector sweep evt", SECTOR_SWEEP_EVT);
+        responderSectorSweepEvt = new cMessage("responder sector sweep evt", RESPONDER_SECTOR_SWEEP_EVT);
 
         generatedBSMs = 0;
         generatedWSAs = 0;
@@ -93,9 +97,12 @@ void DemoBaseApplLayer11ad::initialize(int stage)
         simtime_t firstBeacon = simTime();
         simtime_t randomOffset = dblrand() * beaconInterval;
         firstBeacon = simTime() + randomOffset;
+
         if (sendBeacons) {
-                scheduleAt(firstBeacon, sendBeaconEvt);
-                scheduleAt(simTime()+1, calcStatsEvt);
+            scheduleAt(firstBeacon, sectorSweepEvt);
+            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
+            // scheduleAt(firstBeacon, sendBeaconEvt);
+            scheduleAt(simTime()+1, calcStatsEvt);
         }
         
     }
@@ -129,7 +136,7 @@ void DemoBaseApplLayer11ad::populateWSM(BaseFrame1609_4* wsm, LAddress::L2Type r
         bsm->setPsid(-1);
         bsm->setChannelNumber(static_cast<int>(Channel::ch2));
         bsm->addBitLength(200000);
-        bsm->setAccessTechnology("NIC_A");
+        // bsm->setSendSector("NIC_A");
         wsm->setUserPriority(beaconUserPriority);
     }
     else if (DemoServiceAdvertisment* wsa = dynamic_cast<DemoServiceAdvertisment*>(wsm)) {
@@ -155,6 +162,41 @@ void DemoBaseApplLayer11ad::handleLowerMsg(cMessage* msg)
         // std::cerr << bsm->getPsid() <<" appbsm received " << simTime() << std::endl;
         //  std::cerr << bsm->getTimestamp() <<" time "<< std::endl;
         latency.record(simTime() - bsm->getTimestamp());
+
+        DeciderResult80211* macRes = check_and_cast<DeciderResult80211*>(PhyToMacControlInfo::getDeciderResult(msg));
+        DeciderResult80211* res = new DeciderResult80211(*macRes);
+        std::cerr << " app SinrMin mW "<< res->getSnr() << std::endl;
+        std::cerr <<" app getSendSector "<< bsm->getSendSector() << std::endl;
+        std::cerr <<" app getReceiveSector "<< bsm->getReceiveSector() << std::endl;
+        int senderId = bsm->getPsid();
+        std::cerr << " sender node id " << senderId << std::endl;
+
+        if (getNode()->getId() != senderId && senderId != -1) { // check if it is from my own antenna sectors
+            if (sectorInfo.find(senderId) == sectorInfo.end()) { // node does not exist so save it
+                std::cerr << " tuple not exist " << senderId << std::endl;
+                sectorInfo[senderId] = std::make_tuple(bsm->getSendSector(), bsm->getReceiveSector(), res->getSnr());
+            }
+            else {
+                auto& tup = sectorInfo[senderId];
+                std::cerr << " tuple exist " << senderId << std::endl;
+                if (std::get<2>(tup) < res->getSnr()) {
+
+                    std::get<0>(tup) = bsm->getSendSector();
+                    std::get<1>(tup) = bsm->getReceiveSector();
+                    std::get<2>(tup) = res->getSnr();
+                }
+            }
+
+//            if(strcmp(bsm->getSendSector(), "nicC") == 0) {  //if last NIC/sector is sending message then send back responder SSW on so far best sector
+            if(bsm->getResponderSweep()) {
+                receiverId = senderId;
+                scheduleAt(simTime(), responderSectorSweepEvt);
+
+            }
+            auto tup = sectorInfo[senderId];
+            std::cerr << " tuple sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
+        }
+
         // onBSM(bsm);
         numPack++;
         numBits += wsm->getBitLength();
@@ -187,8 +229,65 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
         bsm->setTimestamp(simTime());
         // bsm->setPsid(123);
         // std::cerr << bsm->getPsid() << " bsm app " << simTime() << std::endl;
+        if (!doSectorSweep) {
+
+            std::cerr <<  getNode()->getId() << " no sector sweep, size" << sectorInfo.size() << std::endl;
+            // auto tup = sectorInfo[21];
+            for (auto& p : sectorInfo)
+            {
+                // std::int const& key = p.first;
+                std::cerr << getNode()->getId() << " key is " << p.first << std::endl;
+                auto& tup2 = sectorInfo[p.first];
+                std::cerr << " tup is " << std::get<0>(tup2) << " tup is " << std::get<1>(tup2) << " tup is " << std::get<2>(tup2)<< std::endl;
+            }
+            // std::cerr << " no sector sweep, size" << sectorInfo.size() << " sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
+            // bsm->setSendSector(std::get<0>(tup).c_str());
+
+            sendDown(bsm);
+            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
+        }
+        // else {
+            
+        // }
+        break;
+    }
+    case SECTOR_SWEEP_EVT: {
+        DemoSafetyMessage* bsm = new DemoSafetyMessage();
+        populateWSM(bsm);
+        bsm->setTimestamp(simTime());
+        doSectorSweep = true;
+        bsm->setPsid(getNode()->getId());
+
+        if (sectorNumb == 1) {
+            bsm->setSendSector("nicA");
+            sectorNumb++;
+        }
+        else if (sectorNumb == 2) {
+            bsm->setSendSector("nicB");
+            sectorNumb++;
+        }
+        else if (sectorNumb == 3) {
+            bsm->setSendSector("nicC");
+            bsm->setResponderSweep(true);
+            sectorNumb = 1;
+            doSectorSweep = false;
+        }
+
         sendDown(bsm);
-        scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
+        scheduleAt(simTime() + (sectorNumb == 1 ? sectorSweepInterval : 0.000001), sectorSweepEvt);
+
+        break;
+    }
+    case RESPONDER_SECTOR_SWEEP_EVT: {
+        auto& sender = sectorInfo[receiverId];
+        DemoSafetyMessage* responderBsm = new DemoSafetyMessage();
+        populateWSM(responderBsm);
+        responderBsm->setTimestamp(simTime());
+        responderBsm->setPsid(getNode()->getId());
+        responderBsm->setSendSector(std::get<1>(sender).c_str());   // send at node's best receive sector
+        std::cerr << " *-*-*-**-*-*-**-*-*-*-**-* sending ack" << receiverId << " " << simTime() << std::endl;
+        sendDown(responderBsm);
+
         break;
     }
     case SEND_WSA_EVT: {
@@ -235,6 +334,9 @@ DemoBaseApplLayer11ad::~DemoBaseApplLayer11ad()
 {
     cancelAndDelete(sendBeaconEvt);
     cancelAndDelete(sendWSAEvt);
+    cancelAndDelete(calcStatsEvt);
+    cancelAndDelete(sectorSweepEvt);
+    cancelAndDelete(responderSectorSweepEvt);
     findHost()->unsubscribe(BaseMobility::mobilityStateChangedSignal, this);
 }
 

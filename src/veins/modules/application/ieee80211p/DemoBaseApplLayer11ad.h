@@ -65,7 +65,9 @@ public:
     enum DemoApplMessageKinds {
         SEND_BEACON_EVT,
         SEND_WSA_EVT,
-        Calc_Stats_EVT
+        Calc_Stats_EVT,
+        SECTOR_SWEEP_EVT,
+        RESPONDER_SECTOR_SWEEP_EVT
     };
 
 protected:
@@ -118,10 +120,16 @@ protected:
     AnnotationManager* annotations;
     DemoBaseApplLayerToMac1609_4Interface* mac;
 
+    std::map<int, std::tuple<std::string, std::string, double>> sectorInfo;
+    int sectorNumb = 1;
+    bool doSectorSweep = true;
+    int receiverId = -5;
+
     /* BSM (beacon) settings */
     uint32_t beaconLengthBits;
     uint32_t beaconUserPriority;
     simtime_t beaconInterval;
+    simtime_t sectorSweepInterval;
     bool sendBeacons;
 
     /* WSM (data) settings */
@@ -152,6 +160,8 @@ protected:
     cMessage* sendBeaconEvt;
     cMessage* sendWSAEvt;
     cMessage* calcStatsEvt;
+    cMessage* sectorSweepEvt;
+    cMessage* responderSectorSweepEvt;
 
     uint32_t numPack;
     cOutVector packets;
