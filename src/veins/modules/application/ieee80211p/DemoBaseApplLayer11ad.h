@@ -80,6 +80,9 @@ protected:
     /** @brief sets all the necessary fields in the WSM, BSM, or WSA. */
     virtual void populateWSM(BaseFrame1609_4* wsm, LAddress::L2Type rcvId = LAddress::L2BROADCAST(), int serial = 0);
 
+    /** @brief sets all the necessary fields in the sector sweep beacon. */
+    virtual void populateSSW(BaseFrame1609_4* wsm, LAddress::L2Type rcvId = LAddress::L2BROADCAST(), int serial = 0);
+
     /** @brief this function is called upon receiving a BaseFrame1609_4 */
     virtual void onWSM(BaseFrame1609_4* wsm){};
 

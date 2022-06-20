@@ -100,8 +100,8 @@ void DemoBaseApplLayer11ad::initialize(int stage)
 
         if (sendBeacons) {
             scheduleAt(firstBeacon, sectorSweepEvt);
-            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
-            // scheduleAt(firstBeacon, sendBeaconEvt);
+//            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
+            scheduleAt(firstBeacon + 0.01, sendBeaconEvt);
             scheduleAt(simTime()+1, calcStatsEvt);
         }
         
@@ -133,7 +133,7 @@ void DemoBaseApplLayer11ad::populateWSM(BaseFrame1609_4* wsm, LAddress::L2Type r
     if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(wsm)) {
         bsm->setSenderPos(curPosition);
         bsm->setSenderSpeed(curSpeed);
-        bsm->setPsid(-1);
+        bsm->setPsid(getNode()->getId());
         bsm->setChannelNumber(static_cast<int>(Channel::ch2));
         bsm->addBitLength(200000);
         // bsm->setSendSector("NIC_A");
@@ -152,6 +152,23 @@ void DemoBaseApplLayer11ad::populateWSM(BaseFrame1609_4* wsm, LAddress::L2Type r
     }
 }
 
+void DemoBaseApplLayer11ad::populateSSW(BaseFrame1609_4* wsm, LAddress::L2Type rcvId, int serial)
+{
+    wsm->setRecipientAddress(rcvId);
+    wsm->setBitLength(headerLength);
+
+    if (DemoSafetyMessage* bsm = dynamic_cast<DemoSafetyMessage*>(wsm)) {
+        bsm->setSenderPos(curPosition);
+        bsm->setSenderSpeed(curSpeed);
+        bsm->setChannelNumber(static_cast<int>(Channel::ch2));
+        bsm->addBitLength(10000);
+        bsm->setTimestamp(simTime());
+        bsm->setPsid(getNode()->getId());
+        bsm->setUserPriority(7);
+        bsm->setIsSectorSweep(true);
+    }
+}
+
 void DemoBaseApplLayer11ad::handleLowerMsg(cMessage* msg)
 {
     BaseFrame1609_4* wsm = dynamic_cast<BaseFrame1609_4*>(msg);
@@ -165,53 +182,62 @@ void DemoBaseApplLayer11ad::handleLowerMsg(cMessage* msg)
 
         DeciderResult80211* macRes = check_and_cast<DeciderResult80211*>(PhyToMacControlInfo::getDeciderResult(msg));
         DeciderResult80211* res = new DeciderResult80211(*macRes);
-        std::cerr << " app SinrMin mW "<< res->getSnr() << std::endl;
-        std::cerr <<" app getSendSector "<< bsm->getSendSector() << std::endl;
-        std::cerr <<" app getReceiveSector "<< bsm->getReceiveSector() << std::endl;
+//        std::cerr << " app SinrMin mW "<< res->getSnr() << std::endl;
+//        std::cerr <<" app getSendSector "<< bsm->getSendSector() << std::endl;
+//        std::cerr <<" app getReceiveSector "<< bsm->getReceiveSector() << std::endl;
         int senderId = bsm->getPsid();
-        std::cerr << " sender node id " << senderId << std::endl;
+//        std::cerr << " sender node id " << senderId << std::endl;
 
-        if (getNode()->getId() != senderId && senderId != -1) { // check if it is from my own antenna sectors
-            if (sectorInfo.find(senderId) == sectorInfo.end()) { // node does not exist so save it
-                std::cerr << " tuple not exist " << senderId << std::endl;
-                sectorInfo[senderId] = std::make_tuple(bsm->getSendSector(), bsm->getReceiveSector(), res->getSnr());
+        if (getNode()->getId() != senderId) { // check if it is from my own antenna sectors
+
+            if(bsm->isSectorSweep()) {
+                if (sectorInfo.find(senderId) == sectorInfo.end()) { // node does not exist so save it
+    //                std::cerr << " tuple not exist " << senderId << std::endl;
+                    sectorInfo[senderId] = std::make_tuple(bsm->getSendSector(), bsm->getReceiveSector(), res->getSnr());
+                }
+                else {
+                    auto& tup = sectorInfo[senderId];
+    //                std::cerr << " tuple exist " << senderId << std::endl;
+                    if (std::get<2>(tup) < res->getSnr()) {
+
+                        std::get<0>(tup) = bsm->getSendSector();
+                        std::get<1>(tup) = bsm->getReceiveSector();
+                        std::get<2>(tup) = res->getSnr();
+                    }
+                }
+
+    //            if(strcmp(bsm->getSendSector(), "nicC") == 0) {  //if last NIC/sector is sending message then send back responder SSW on so far best sector
+                if(bsm->getResponderSweep()) {
+                    receiverId = senderId;
+                    scheduleAt(simTime(), responderSectorSweepEvt);
+
+                }
+    //            auto tup = sectorInfo[senderId];
+    //            std::cerr << " tuple sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
             }
             else {
-                auto& tup = sectorInfo[senderId];
-                std::cerr << " tuple exist " << senderId << std::endl;
-                if (std::get<2>(tup) < res->getSnr()) {
+                // onBSM(bsm);
+                auto tup = sectorInfo[senderId];
+                if(wsm->getReceiveSector() == std::get<1>(tup)) {   // only consider the packets received on my best sector/NIC
 
-                    std::get<0>(tup) = bsm->getSendSector();
-                    std::get<1>(tup) = bsm->getReceiveSector();
-                    std::get<2>(tup) = res->getSnr();
+                    numPack++;
+                    numBits += wsm->getBitLength();
+                    simtime_t interval = simTime() - this->lastUpdate;
+                    if(interval >= 1) {
+                        uint64_t divby = 1048576;
+                        double mbps = FWMath::div(numBits, divby) ;// numBits / divby;
+                        std::cerr << " bytes " << wsm->getBitLength() <<" datarate " << mbps << " Mbits/s" << std::endl;
+                        numBits = 0;
+                        dataRate.record(mbps);
+                        packets.record(numPack);
+                        this->lastUpdate = simTime();
+                        numPack = 0;
+                        // EV_INFO << "interval is " << interval << endl;
+                    }
                 }
             }
-
-//            if(strcmp(bsm->getSendSector(), "nicC") == 0) {  //if last NIC/sector is sending message then send back responder SSW on so far best sector
-            if(bsm->getResponderSweep()) {
-                receiverId = senderId;
-                scheduleAt(simTime(), responderSectorSweepEvt);
-
-            }
-            auto tup = sectorInfo[senderId];
-            std::cerr << " tuple sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
         }
 
-        // onBSM(bsm);
-        numPack++;
-        numBits += wsm->getBitLength();
-        simtime_t interval = simTime() - this->lastUpdate;
-        if(interval >= 1) {
-            uint64_t divby = 1048576;
-            double mbps = FWMath::div(numBits, divby) ;// numBits / divby;
-            std::cerr << " bytes " << wsm->getBitLength() <<" datarate " << mbps << " Mbits/s" << std::endl;
-            numBits = 0;
-            dataRate.record(mbps);
-            packets.record(numPack);
-            this->lastUpdate = simTime();
-            numPack = 0;
-            // EV_INFO << "interval is " << interval << endl;
-        }
     }
     else {
         notBSMs++;
@@ -224,39 +250,43 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
 {
     switch (msg->getKind()) {
     case SEND_BEACON_EVT: {
-        DemoSafetyMessage* bsm = new DemoSafetyMessage();
-        populateWSM(bsm);
-        bsm->setTimestamp(simTime());
-        // bsm->setPsid(123);
-        // std::cerr << bsm->getPsid() << " bsm app " << simTime() << std::endl;
         if (!doSectorSweep) {
+            DemoSafetyMessage* bsm = new DemoSafetyMessage();
+            populateWSM(bsm);
+            bsm->setTimestamp(simTime());
+            // bsm->setPsid(123);
+            // std::cerr << bsm->getPsid() << " bsm app " << simTime() << std::endl;
 
-            std::cerr <<  getNode()->getId() << " no sector sweep, size" << sectorInfo.size() << std::endl;
+//            std::cerr <<  getNode()->getId() << " no sector sweep, size" << sectorInfo.size() << std::endl;
             // auto tup = sectorInfo[21];
             for (auto& p : sectorInfo)
             {
                 // std::int const& key = p.first;
-                std::cerr << getNode()->getId() << " key is " << p.first << std::endl;
+//                std::cerr << getNode()->getId() << " key is " << p.first << std::endl;
                 auto& tup2 = sectorInfo[p.first];
-                std::cerr << " tup is " << std::get<0>(tup2) << " tup is " << std::get<1>(tup2) << " tup is " << std::get<2>(tup2)<< std::endl;
+//                std::cerr << " tup is " << std::get<0>(tup2) << " tup is " << std::get<1>(tup2) << " tup is " << std::get<2>(tup2)<< std::endl;
+
+                bsm->setSendSector(std::get<1>(tup2).c_str());
+                sendDown(bsm);
             }
             // std::cerr << " no sector sweep, size" << sectorInfo.size() << " sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
             // bsm->setSendSector(std::get<0>(tup).c_str());
 
-            sendDown(bsm);
-            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
+//            sendDown(bsm);
+            if(sectorInfo.size() <1) {
+                delete (bsm);
+            }
+//            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
         }
         // else {
-            
+        scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
         // }
         break;
     }
     case SECTOR_SWEEP_EVT: {
         DemoSafetyMessage* bsm = new DemoSafetyMessage();
-        populateWSM(bsm);
-        bsm->setTimestamp(simTime());
+        populateSSW(bsm);
         doSectorSweep = true;
-        bsm->setPsid(getNode()->getId());
 
         if (sectorNumb == 1) {
             bsm->setSendSector("nicA");
@@ -281,9 +311,7 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
     case RESPONDER_SECTOR_SWEEP_EVT: {
         auto& sender = sectorInfo[receiverId];
         DemoSafetyMessage* responderBsm = new DemoSafetyMessage();
-        populateWSM(responderBsm);
-        responderBsm->setTimestamp(simTime());
-        responderBsm->setPsid(getNode()->getId());
+        populateSSW(responderBsm);
         responderBsm->setSendSector(std::get<1>(sender).c_str());   // send at node's best receive sector
         std::cerr << " *-*-*-**-*-*-**-*-*-*-**-* sending ack" << receiverId << " " << simTime() << std::endl;
         sendDown(responderBsm);

@@ -33,7 +33,8 @@ packet BaseFrame1609_4 {
     int psid = 0;
     //Recipient of frame (-1 for any)
     LAddress::L2Type recipientAddress = -1;
-    string sendSector = "";     // sector/NIC from which frame is send
-    string receiveSector = "";  // sector/NIC at which frame is received
-    bool responderSweep = false;  // flag to start responder Sweep
+    bool isSectorSweep = false;   // falg to differentiate between sector sweep and data packets
+    string sendSector = "";         // sector/NIC from which frame is send
+    string receiveSector = "";      // sector/NIC at which frame is received
+    bool responderSweep = false;    // flag to start responder Sweep
 }
