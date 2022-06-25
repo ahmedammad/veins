@@ -33,13 +33,16 @@ void Splitter11ad::initialize()
     lowerLayerOut_nicA = findGate("lowerLayerOut_nicA");
     lowerLayerOut_nicB = findGate("lowerLayerOut_nicB");
     lowerLayerOut_nicC = findGate("lowerLayerOut_nicC");
+    lowerLayerOut_nicD = findGate("lowerLayerOut_nicD");
+    lowerLayerOut_nicE = findGate("lowerLayerOut_nicE");
 
     // From lower layers --> upper layers
     upperLayerOut = findGate("upperLayerOut");
     lowerLayerIn_nicA = findGate("lowerLayerIn_nicA");
     lowerLayerIn_nicB = findGate("lowerLayerIn_nicB");
     lowerLayerIn_nicC = findGate("lowerLayerIn_nicC");
-
+    lowerLayerIn_nicD = findGate("lowerLayerIn_nicD");
+    lowerLayerIn_nicE = findGate("lowerLayerIn_nicE");
 }
 
 void Splitter11ad::handleMessage(cMessage* msg)
@@ -71,16 +74,19 @@ void Splitter11ad::handleUpperMessage(cMessage* msg)
         networkType = bsm->getSendSector();
         // std::cerr << networkType <<" networkType "<< std::endl;
         if (networkType == "nicA") {
-            // hetMsg->setChannelNumber(static_cast<int>(Channel::sch1));
             send(bsm, lowerLayerOut_nicA);
         }
         else if (networkType == "nicB"){
-            // hetMsg->setChannelNumber(static_cast<int>(Channel::cch));
             send(bsm, lowerLayerOut_nicB);
         }
         else if (networkType == "nicC"){
-            // hetMsg->setChannelNumber(static_cast<int>(Channel::sch4));
             send(bsm, lowerLayerOut_nicC);
+        }
+        else if (networkType == "nicD"){
+            send(bsm, lowerLayerOut_nicD);
+        }
+        else if (networkType == "nicE"){
+            send(bsm, lowerLayerOut_nicE);
         }
         else {
             delete(bsm);

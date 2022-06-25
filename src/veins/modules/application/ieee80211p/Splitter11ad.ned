@@ -38,4 +38,10 @@ simple Splitter11ad
 
         output lowerLayerOut_nicC;        // output gate towards the 802.11p NIC
         input lowerLayerIn_nicC;          // input gate from the 802.11p NIC
+        
+        output lowerLayerOut_nicD;        // output gate towards the 802.11p NIC
+        input lowerLayerIn_nicD;          // input gate from the 802.11p NIC
+        
+        output lowerLayerOut_nicE;        // output gate towards the 802.11p NIC
+        input lowerLayerIn_nicE;          // input gate from the 802.11p NIC
 }

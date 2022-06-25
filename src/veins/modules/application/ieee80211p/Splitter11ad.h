@@ -55,6 +55,10 @@ protected:
      int lowerLayerIn_nicB;
      int lowerLayerOut_nicC;
      int lowerLayerIn_nicC;
+     int lowerLayerOut_nicD;
+     int lowerLayerIn_nicD;
+     int lowerLayerOut_nicE;
+     int lowerLayerIn_nicE;
 };
 
 } // namespace veins

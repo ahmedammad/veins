@@ -135,7 +135,7 @@ void DemoBaseApplLayer11ad::populateWSM(BaseFrame1609_4* wsm, LAddress::L2Type r
         bsm->setSenderSpeed(curSpeed);
         bsm->setPsid(getNode()->getId());
         bsm->setChannelNumber(static_cast<int>(Channel::ch2));
-        bsm->addBitLength(200000);
+        bsm->addBitLength(2097144);     // max allowed 262143 octets = 2097144 bits
         // bsm->setSendSector("NIC_A");
         wsm->setUserPriority(beaconUserPriority);
     }
@@ -212,8 +212,9 @@ void DemoBaseApplLayer11ad::handleLowerMsg(cMessage* msg)
                     scheduleAt(simTime(), responderSectorSweepEvt);
 
                 }
-    //            auto tup = sectorInfo[senderId];
-    //            std::cerr << " tuple sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
+//                auto tup = sectorInfo[senderId];
+//                std::cerr << " sender node id " << senderId << std::endl;
+//                std::cerr << " tuple sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
             }
             else {
                 // onBSM(bsm);
@@ -298,6 +299,14 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
         }
         else if (sectorNumb == 3) {
             bsm->setSendSector("nicC");
+            sectorNumb++;
+        }
+        else if (sectorNumb == 4) {
+            bsm->setSendSector("nicD");
+            sectorNumb++;
+        }
+        else if (sectorNumb == 5) {
+            bsm->setSendSector("nicE");
             bsm->setResponderSweep(true);
             sectorNumb = 1;
             doSectorSweep = false;
@@ -313,7 +322,7 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
         DemoSafetyMessage* responderBsm = new DemoSafetyMessage();
         populateSSW(responderBsm);
         responderBsm->setSendSector(std::get<1>(sender).c_str());   // send at node's best receive sector
-        std::cerr << " *-*-*-**-*-*-**-*-*-*-**-* sending ack" << receiverId << " " << simTime() << std::endl;
+//        std::cerr << " *-*-*-**-*-*-**-*-*-*-**-* sending ack" << receiverId << " " << simTime() << std::endl;
         sendDown(responderBsm);
 
         break;

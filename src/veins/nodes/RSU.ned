@@ -34,6 +34,8 @@ module RSU
         input veinsradioInA; // gate for sendDirect
         input veinsradioInB;
         input veinsradioInC;
+        input veinsradioInD;
+        input veinsradioInE;
     submodules:
         appl: <applType> like org.car2x.veins.base.modules.IBaseApplLayer {
             parameters:
@@ -53,6 +55,14 @@ module RSU
         nicC: <nicType> like org.car2x.veins.modules.nic.INic80211p {
              parameters:
                  @display("p=250,250");
+        }
+		nicD: <nicType> like org.car2x.veins.modules.nic.INic80211p {
+             parameters:
+                 @display("p=250,180");
+        }
+		nicE: <nicType> like org.car2x.veins.modules.nic.INic80211p {
+             parameters:
+                 @display("p=250,110");
         }
 
         mobility: BaseMobility {
@@ -82,8 +92,15 @@ module RSU
          splitter.lowerLayerOut_nicC --> nicC.upperLayerIn;
          splitter.lowerLayerIn_nicC <-- nicC.upperLayerOut;
 
+		 splitter.lowerLayerOut_nicD --> nicD.upperLayerIn;
+         splitter.lowerLayerIn_nicD <-- nicD.upperLayerOut;
+
+		 splitter.lowerLayerOut_nicE --> nicE.upperLayerIn;
+         splitter.lowerLayerIn_nicE <-- nicE.upperLayerOut;
+
          veinsradioInA --> nicA.radioIn;
          veinsradioInB --> nicB.radioIn;
          veinsradioInC --> nicC.radioIn;
-
+         veinsradioInD --> nicD.radioIn;
+		 veinsradioInE --> nicE.radioIn;
 }
