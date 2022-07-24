@@ -26,6 +26,8 @@
 
 #include "veins/base/modules/BaseApplLayer.h"
 #include "veins/modules/messages/DemoSafetyMessage_m.h"
+#include "veins/modules/mac/ieee80211p/Mac1609_4.h"
+//#include "veins/modules/nic/Nic80211p.ned"
 
 namespace veins {
 
@@ -36,8 +38,14 @@ public:
     void initialize();
     void finish();
 
+    enum SplitterMessageKinds {
+        Calc_Stats_EVT
+    };
+
 protected:
     void handleMessage(cMessage*);
+
+    void handleSelfMsg(cMessage* msg);
 
     /** @brief handle messages from upper  */
     void handleUpperMessage(cMessage* msg);
@@ -59,6 +67,12 @@ protected:
      int lowerLayerIn_nicD;
      int lowerLayerOut_nicE;
      int lowerLayerIn_nicE;
+
+     Mac1609_4* mac;
+     cMessage* calcStatsEvt;     
+     cOutVector channelUtiliz;
+     std::vector<std::string> nicArr = {"nicA", "nicB", "nicC", "nicD", "nicE"};
+     std::map<std::string, std::pair<simtime_t, simtime_t>> chBusyIdleInfo = {{"nicA", {0,0}}, {"nicB", {0,0}}, {"nicC", {0,0}}, {"nicD", {0,0}}, {"nicE", {0,0}}};
 };
 
 } // namespace veins

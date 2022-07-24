@@ -21,6 +21,7 @@
 //
 
 #include "veins/modules/application/ieee80211p/Splitter11ad.h"
+#include "veins/modules/mac/ieee80211p/Mac1609_4.h"
 
 using namespace veins;
 
@@ -43,14 +44,20 @@ void Splitter11ad::initialize()
     lowerLayerIn_nicC = findGate("lowerLayerIn_nicC");
     lowerLayerIn_nicD = findGate("lowerLayerIn_nicD");
     lowerLayerIn_nicE = findGate("lowerLayerIn_nicE");
+
+    calcStatsEvt = new cMessage("stats evt", Calc_Stats_EVT);
+    channelUtiliz.setName("channelUtilizationSpliter");
+    scheduleAt(simTime()+1, calcStatsEvt);
+
 }
 
 void Splitter11ad::handleMessage(cMessage* msg)
 {
     if (msg->isSelfMessage()) {
+        handleSelfMsg(msg);
 //        error("Self-message arrived!");
-        delete msg;
-        msg = NULL;
+//        delete msg;
+//        msg = NULL;
     }
     else {
         int arrivalGate = msg->getArrivalGateId();
@@ -62,6 +69,55 @@ void Splitter11ad::handleMessage(cMessage* msg)
             handleLowerMessage(msg);
         }
      }
+}
+
+void Splitter11ad::handleSelfMsg(cMessage* msg)
+{
+//    std::cerr <<" splitter self message " << msg->getKind()<< std::endl;
+    switch (msg->getKind()) {
+        case Calc_Stats_EVT: {
+/*            mac = FindModule<DemoBaseApplLayerToMac1609_4Interface*>::findSubModule(getParentModule());
+            std::pair<simtime_t, simtime_t> time = mac->getBusyIdleTime();
+            simtime_t busy = time.first - lastBusyTime;
+            simtime_t idle = time.second - lastIdleTime;
+            double chUtilization = (busy.dbl() / (busy + idle).dbl() * 100);
+            channelUtiliz.record(chUtilization);
+            // std::cerr <<" chUtilization " << chUtilization << " %" << std::endl;
+            lastBusyTime = time.first;
+            lastIdleTime = time.second;*/
+            // std::cerr <<" calc busytime " << busy << std::endl;
+            // std::cerr <<" calc idletime " << idle << std::endl;
+        //    std::cerr <<" splitter name " << getParentModule()->getName() << std::endl;
+
+            std::size_t count = nicArr.size();
+
+            for(size_t i = 0; i < count; ++i) {
+                std::string nic = nicArr[i];
+                // std::cerr <<" arr nic " << nic << std::endl;
+                cModule *mod = getParentModule()->getSubmodule(nic.c_str())->getSubmodule("mac1609_4");
+                mac = check_and_cast<Mac1609_4*>(mod);
+
+                std::pair<simtime_t, simtime_t> time =  mac->getBusyIdleTime();
+                std::pair<simtime_t, simtime_t>& lastBusyIdleTime = chBusyIdleInfo[nic];
+
+                simtime_t busy = time.first - lastBusyIdleTime.first;
+                simtime_t idle = time.second - lastBusyIdleTime.second;
+                double chUtilization = (busy.dbl()/(busy+idle).dbl()*100);
+
+                lastBusyIdleTime.first = time.first;
+                lastBusyIdleTime.second = time.second;
+
+                //  std::cerr << mac->getParentModule()->getParentModule()->getName() << mac->getParentModule()->getName() <<" splitter case " << lastBusyIdleTime.first << " , " << chUtilization << std::endl;
+            }
+
+            scheduleAt(simTime() + 1, calcStatsEvt);
+            break;
+        }
+        default: {
+            if (msg) EV_WARN << "Splitter: Error: Got Self Message of unknown kind! Name: " << msg->getName() << endl;
+            break;
+        }
+    }
 }
 
 void Splitter11ad::handleUpperMessage(cMessage* msg)

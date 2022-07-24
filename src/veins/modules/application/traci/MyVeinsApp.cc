@@ -32,8 +32,9 @@ void MyVeinsApp::initialize(int stage)
     DemoBaseApplLayer11ad::initialize(stage);
 
     if (stage == 0) {
-        traciVehicle->setSpeedMode(0x1f);
-            traciVehicle->setSpeed(0);
+//        traciVehicle->setSpeedMode(0x1f);
+//        traciVehicle->setSpeed(0);
+        traciVehicle->setSpeed(10);
         // Initializing members and pointers of your application goes here
         EV << "Initializing " << par("appName").stringValue() << std::endl;
 //        numPack = 0;

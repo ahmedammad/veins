@@ -102,8 +102,9 @@ void DemoBaseApplLayer11ad::initialize(int stage)
             scheduleAt(firstBeacon, sectorSweepEvt);
 //            scheduleAt(simTime() + beaconInterval, sendBeaconEvt);
             scheduleAt(firstBeacon + 0.01, sendBeaconEvt);
-            scheduleAt(simTime()+1, calcStatsEvt);
+//            scheduleAt(simTime()+1, calcStatsEvt);
         }
+        scheduleAt(simTime()+1, calcStatsEvt);
         
     }
     // else if (stage == 1) {
@@ -223,18 +224,18 @@ void DemoBaseApplLayer11ad::handleLowerMsg(cMessage* msg)
 
                     numPack++;
                     numBits += wsm->getBitLength();
-                    simtime_t interval = simTime() - this->lastUpdate;
-                    if(interval >= 1) {
-                        uint64_t divby = 1048576;
-                        double mbps = FWMath::div(numBits, divby) ;// numBits / divby;
-                        std::cerr << " bytes " << wsm->getBitLength() <<" datarate " << mbps << " Mbits/s" << std::endl;
-                        numBits = 0;
-                        dataRate.record(mbps);
-                        packets.record(numPack);
-                        this->lastUpdate = simTime();
-                        numPack = 0;
+//                    simtime_t interval = simTime() - this->lastUpdate;
+//                    if(interval >= 1) {
+//                        uint64_t divby = 1048576;
+//                        double mbps = FWMath::div(numBits, divby) ;// numBits / divby;
+//                        std::cerr << " bytes " << wsm->getBitLength() <<" datarate " << mbps << " Mbits/s" << std::endl;
+//                        numBits = 0;
+//                        dataRate.record(mbps);
+//                        packets.record(numPack);
+//                        this->lastUpdate = simTime();
+//                        numPack = 0;
                         // EV_INFO << "interval is " << interval << endl;
-                    }
+//                    }
                 }
             }
         }
@@ -268,7 +269,8 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
 //                std::cerr << " tup is " << std::get<0>(tup2) << " tup is " << std::get<1>(tup2) << " tup is " << std::get<2>(tup2)<< std::endl;
 
                 bsm->setSendSector(std::get<1>(tup2).c_str());
-                sendDown(bsm);
+                if(!bsm->isScheduled())
+                 {sendDown(bsm);}
             }
             // std::cerr << " no sector sweep, size" << sectorInfo.size() << " sendsector " << std::get<0>(tup) << " receivesector " << std::get<1>(tup) << " snir " << std::get<2>(tup) << std::endl;
             // bsm->setSendSector(std::get<0>(tup).c_str());
@@ -345,6 +347,13 @@ void DemoBaseApplLayer11ad::handleSelfMsg(cMessage* msg)
         lastIdleTime = time.second;
         // std::cerr <<" calc busytime " << busy << std::endl;
         // std::cerr <<" calc idletime " << idle << std::endl;
+        uint64_t divby = 1048576;
+        double mbps = FWMath::div(numBits, divby) ;// numBits / divby;
+        std::cerr <<" datarate " << mbps << " Mbits/s" << std::endl;
+        numBits = 0;
+        dataRate.record(mbps);
+        packets.record(numPack);
+        numPack = 0;
         scheduleAt(simTime() + 1, calcStatsEvt);
         break;
     }

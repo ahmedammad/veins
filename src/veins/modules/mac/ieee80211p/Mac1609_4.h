@@ -291,8 +291,8 @@ protected:
     long statsNumInternalContention;
     long statsNumBackoff;
     long statsSlotsBackoff;
-    long inMacnxtevent;
-    long inMachandleself;
+    // long inMacnxtevent;
+    // long inMachandleself;
     simtime_t statsTotalBusyTime;
     simtime_t statsTotalIdleTime;
 

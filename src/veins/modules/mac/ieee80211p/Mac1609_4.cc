@@ -76,7 +76,7 @@ void Mac1609_4::initialize(int stage)
         myEDCA[ChannelType::control]->myId = myId;
         myEDCA[ChannelType::control]->myId.append(" CCH");
         myEDCA[ChannelType::control]->createQueue(0, (((CWMIN_11P + 1) / 4) - 1), (((CWMIN_11P + 1) / 2) - 1), AC_VO);
-        myEDCA[ChannelType::control]->createQueue(0, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
+        myEDCA[ChannelType::control]->createQueue(3, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
         myEDCA[ChannelType::control]->createQueue(6, CWMIN_11P, CWMAX_11P, AC_BE);
         myEDCA[ChannelType::control]->createQueue(9, CWMIN_11P, CWMAX_11P, AC_BK);
         myEDCA[ChannelType::control]->is11ad = is11ad;
@@ -156,8 +156,8 @@ void Mac1609_4::initialize(int stage)
         statsSlotsBackoff = 0;
         statsTotalBusyTime = 0;
         statsTotalIdleTime = 0;
-        inMacnxtevent = 0;
-        inMachandleself = 0;
+        // inMacnxtevent = 0;
+        // inMachandleself = 0;
         idleChannel = true;
         lastBusy = simTime();
         channelIdle(true);
@@ -169,7 +169,8 @@ void Mac1609_4::initialize(int stage)
 }
 
 void Mac1609_4::handleSelfMsg(cMessage* msg)
-{   inMachandleself++;
+{   
+    // inMachandleself++;
 
     if (msg == stopIgnoreChannelStateMsg) {
         ignoreChannelState = false;
@@ -466,8 +467,8 @@ void Mac1609_4::finish()
     recordScalar("SlotsBackoff", statsSlotsBackoff);
     recordScalar("NumInternalContention", statsNumInternalContention);
     recordScalar("totalBusyTime", statsTotalBusyTime.dbl());
-    recordScalar("inMacnxtevent", inMacnxtevent);
-    recordScalar("inMachandleself", inMachandleself);
+    // recordScalar("inMacnxtevent", inMacnxtevent);
+    // recordScalar("inMachandleself", inMachandleself);
     recordScalar("totalIdleTime", statsTotalIdleTime.dbl());
 }
 
@@ -578,15 +579,17 @@ void Mac1609_4::setCCAThreshold(double ccaThreshold_dBm)
 
 void Mac1609_4::handleBroadcast(Mac80211Pkt* macPkt, DeciderResult80211* res)
 {
-    statsReceivedBroadcasts++;
     unique_ptr<BaseFrame1609_4> wsm(check_and_cast<BaseFrame1609_4*>(macPkt->decapsulate()));
-    auto ctrlInfo = new PhyToMacControlInfo(res);
-    ctrlInfo->setSourceAddress(macPkt->getSrcAddr());
-    wsm->setControlInfo(ctrlInfo);
-//     std::cerr << " class name " << wsm->getFullPath() << std::endl;
-//     std::cerr << " getParentModule in mac " << getParentModule()->getName() << std::endl;
-    wsm->setReceiveSector(getParentModule()->getName());
-    sendUp(wsm.release());
+//    if (getNode()->getId() != wsm->getPsid()) {
+        statsReceivedBroadcasts++;
+        auto ctrlInfo = new PhyToMacControlInfo(res);
+        ctrlInfo->setSourceAddress(macPkt->getSrcAddr());
+        wsm->setControlInfo(ctrlInfo);
+    //     std::cerr << " class name " << wsm->getFullPath() << std::endl;
+    //     std::cerr << " getParentModule in mac " << getParentModule()->getName() << std::endl;
+        wsm->setReceiveSector(getParentModule()->getName());
+        sendUp(wsm.release());
+//    }
 }
 
 void Mac1609_4::handleLowerMsg(cMessage* msg)
@@ -951,6 +954,7 @@ void Mac1609_4::channelBusySelf(bool generateTxOp)
 
 std::pair<simtime_t, simtime_t> Mac1609_4::getBusyIdleTime()
 {
+    // std::cerr <<getParentModule()->getParentModule()->getName() << " , " << getParentModule()->getName()<<" getBusyIdleTime " << statsTotalBusyTime << " , " << statsTotalIdleTime << std::endl;
     return std::make_pair(statsTotalBusyTime, statsTotalIdleTime);
 }
 
