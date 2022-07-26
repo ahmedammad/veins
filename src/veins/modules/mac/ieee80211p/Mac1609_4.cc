@@ -75,7 +75,7 @@ void Mac1609_4::initialize(int stage)
         myEDCA[ChannelType::control] = make_unique<EDCA>(this, ChannelType::control, par("queueSize"));
         myEDCA[ChannelType::control]->myId = myId;
         myEDCA[ChannelType::control]->myId.append(" CCH");
-        myEDCA[ChannelType::control]->createQueue(0, (((CWMIN_11P + 1) / 4) - 1), (((CWMIN_11P + 1) / 2) - 1), AC_VO);
+        myEDCA[ChannelType::control]->createQueue(2, (((CWMIN_11P + 1) / 4) - 1), (((CWMIN_11P + 1) / 2) - 1), AC_VO);
         myEDCA[ChannelType::control]->createQueue(3, (((CWMIN_11P + 1) / 2) - 1), CWMIN_11P, AC_VI);
         myEDCA[ChannelType::control]->createQueue(6, CWMIN_11P, CWMAX_11P, AC_BE);
         myEDCA[ChannelType::control]->createQueue(9, CWMIN_11P, CWMAX_11P, AC_BK);
